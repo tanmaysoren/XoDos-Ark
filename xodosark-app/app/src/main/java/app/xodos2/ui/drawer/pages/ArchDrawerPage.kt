@@ -35,24 +35,91 @@ import app.xodos2.ui.runtime.NativeInstallCoordinator
 // ----------------------------------------------------------------
 // Helper: build the correct installation script for any distro
 // ----------------------------------------------------------------
-private fun buildDesktopInstallScript(distro: String, packages: String): String {
-    val managerCmd = when (distro) {
-        "debian", "ubuntu", "kali", "trisquel" ->
-            "apt update && apt install -y"
-        "archlinux", "manjaro", "artix" ->
-            "pacman -Syu --noconfirm"
-        "fedora", "almalinux", "rocky" ->
-            "dnf update -y && dnf install -y"
-        "alpine" ->
-            "apk update && apk add"
-        "void" ->
-            "xbps-install -Su && xbps-install -y"
-        "opensuse" ->
-            "zypper refresh && zypper install -y"
-        else ->
-            "apt update && apt install -y"   // fallback
+private fun buildDesktopInstallScript(distro: String, envName: String): String {
+    val cleanDistro = distro.lowercase().trim()
+    
+    // Resolve base dependencies safely per distribution architecture
+    val (managerCmd, baseDeps) = when {
+        cleanDistro.contains("debian") || cleanDistro.contains("ubuntu") || cleanDistro.contains("kali") || cleanDistro.contains("trisquel") -> {
+            Pair(
+                "apt update && apt install -y",
+                "pulseaudio pavucontrol mesa-utils xwayland libvulkan-dev mesa-vulkan-drivers libgl1-mesa-dri libglx-mesa0 libegl-mesa0 vulkan-tools"
+            )
+        }
+        cleanDistro.contains("arch") || cleanDistro.contains("manjaro") || cleanDistro.contains("artix") -> {
+            Pair(
+                "pacman -Syu --noconfirm --needed",
+                "pulseaudio pavucontrol mesa-utils xorg-xwayland vulkan-devel mesa vulkan-tools"
+            )
+        }
+        cleanDistro.contains("fedora") || cleanDistro.contains("almalinux") || cleanDistro.contains("rocky") -> {
+            Pair(
+                "dnf clean all && dnf install -y",
+                "pulseaudio pavucontrol mesa-utils xorg-x11-server-Xwayland vulkan-loader-devel mesa-dri-drivers vulkan-tools"
+            )
+        }
+        cleanDistro.contains("alpine") -> {
+            Pair(
+                "apk update && apk add",
+                "pulseaudio pavucontrol mesa-utils xwayland vulkan-loader mesa-dri-gallium vulkan-tools"
+            )
+        }
+        cleanDistro.contains("void") -> {
+            Pair(
+                "xbps-install -Su && xbps-install -y",
+                "pulseaudio pavucontrol mesa-utils xwayland vulkan-loader mesa-dri vulkan-tools"
+            )
+        }
+        cleanDistro.contains("opensuse") -> {
+            Pair(
+                "zypper refresh && zypper install -y",
+                "pulseaudio pavucontrol mesa-utils xorg-x11-server-Xwayland vulkan-devel mesa-dri-drivers vulkan-tools"
+            )
+        }
+        else -> { // Fallback safely to Debian-style names
+            Pair(
+                "apt update && apt install -y",
+                "pulseaudio pavucontrol mesa-utils xwayland libvulkan-dev mesa-vulkan-drivers libgl1-mesa-dri libglx-mesa0 libegl-mesa0 vulkan-tools"
+            )
+        }
     }
-    return "$managerCmd $packages\n" +
+
+    // Resolve Desktop Environment specific package strings safely per distro
+    val desktopPackages = when (envName) {
+        "XFCE Desktop" -> when {
+            cleanDistro.contains("arch") || cleanDistro.contains("manjaro") -> "xfce4 xfce4-goodies"
+            cleanDistro.contains("alpine") -> "xfce4 xfce4-terminal"
+            else -> "xfce4 xfce4-goodies"
+        }
+        "LXQt Desktop" -> when {
+            cleanDistro.contains("arch") || cleanDistro.contains("manjaro") -> "lxqt lxqt-themes featherpad"
+            cleanDistro.contains("debian") || cleanDistro.contains("ubuntu") -> "lxqt openbox oxide-qt"
+            else -> "lxqt"
+        }
+        "KDE Plasma" -> when {
+            cleanDistro.contains("arch") || cleanDistro.contains("manjaro") -> "plasma-desktop kde-applications"
+            cleanDistro.contains("debian") || cleanDistro.contains("ubuntu") -> "kde-plasma-desktop"
+            cleanDistro.contains("fedora") -> "@kde-desktop-environment"
+            else -> "plasma-desktop"
+        }
+        "GNOME" -> when {
+            cleanDistro.contains("arch") || cleanDistro.contains("manjaro") -> "gnome gnome-tweaks"
+            cleanDistro.contains("debian") || cleanDistro.contains("ubuntu") -> "gnome-core"
+            cleanDistro.contains("fedora") -> "@gnome-desktop"
+            else -> "gnome"
+        }
+        "MATE" -> when {
+            cleanDistro.contains("arch") || cleanDistro.contains("manjaro") -> "mate mate-extra"
+            else -> "mate-desktop-environment"
+        }
+        "Cinnamon" -> when {
+            cleanDistro.contains("arch") || cleanDistro.contains("manjaro") -> "cinnamon nemo"
+            else -> "cinnamon-desktop-environment"
+        }
+        else -> ""
+    }
+
+    return "$managerCmd $desktopPackages $baseDeps\n" +
            "export PULSE_SERVER=127.0.0.1\n" +
            "echo 'Installation completed!'\n"
 }
@@ -122,19 +189,10 @@ fun ArchDrawerPage(
     }
 
     // ===================== Desktop environment list =====================
-    // Each entry contains only the package names – the correct manager is prepended automatically.
-    data class DesktopEnv(val name: String, val packages: String)
-
-val desktopEnvs = remember(distroId) {
-    listOf(
-        DesktopEnv("XFCE Desktop", "xfce4 xfce4-goodies pulseaudio pavucontrol mesa-utils xorg-server-xwayland libvulkan-dev mesa-vulkan-drivers libgl1-mesa-dri libglx-mesa0 libegl-mesa0 vulkan-tools"),
-        DesktopEnv("LXQt Desktop", "lxqt oxygen-icons pulseaudio pavucontrol mesa-utils xorg-server-xwayland libvulkan-dev mesa-vulkan-drivers libgl1-mesa-dri libglx-mesa0 libegl-mesa0 vulkan-tools"),
-        DesktopEnv("KDE Plasma", "plasma-meta kde-applications-meta pulseaudio pavucontrol mesa-utils xorg-server-xwayland libvulkan-dev mesa-vulkan-drivers libgl1-mesa-dri libglx-mesa0 libegl-mesa0 vulkan-tools"),
-        DesktopEnv("GNOME", "gnome gnome-extra pulseaudio pavucontrol mesa-utils xorg-server-xwayland libvulkan-dev mesa-vulkan-drivers libgl1-mesa-dri libglx-mesa0 libegl-mesa0 vulkan-tools"),
-        DesktopEnv("MATE", "mate mate-extra pulseaudio pavucontrol mesa-utils xorg-server-xwayland libvulkan-dev mesa-vulkan-drivers libgl1-mesa-dri libglx-mesa0 libegl-mesa0 vulkan-tools"),
-        DesktopEnv("Cinnamon", "cinnamon nemo-fileroller pulseaudio pavucontrol mesa-utils xorg-server-xwayland libvulkan-dev mesa-vulkan-drivers libgl1-mesa-dri libglx-mesa0 libegl-mesa0 vulkan-tools")
-    )
-}
+    // Simple environment identifiers, package resolving is moved entirely to buildDesktopInstallScript
+    val desktopEnvNames = remember {
+        listOf("XFCE Desktop", "LXQt Desktop", "KDE Plasma", "GNOME", "MATE", "Cinnamon")
+    }
 
     // ===================== Existing UI =====================
     if (!hasArchRootfs) {
@@ -234,9 +292,9 @@ val desktopEnvs = remember(distroId) {
             onAppearanceClick = { scope.launch { drawerState.close() } },
             onSessionClick = { scope.launch { drawerState.close() } },
             onKeyboardClick = {
-    onRequestKeyboard()
-    scope.launch { drawerState.close() }
-},
+                onRequestKeyboard()
+                scope.launch { drawerState.close() }
+            },
             onLauncherDefaultSelect = onLauncherDefaultSelect,
             onDesktopVulkanSelect = onDesktopVulkanSelect,
             onDesktopOpenGLSelect = onDesktopOpenGLSelect,
@@ -259,7 +317,6 @@ val desktopEnvs = remember(distroId) {
         ),
         showDebianDesktop = true,
         extraContent = {
-            // Existing scripts section
             ArchExtraContent(
                 prefs = prefs,
                 waylandScriptEditorOpen = waylandScriptEditorOpen,
@@ -290,18 +347,18 @@ val desktopEnvs = remember(distroId) {
                 }
             }
 
-            // ===================== Install Desktop section (SMART) =====================
+            // ===================== Install Desktop section (SMART FIXES APPLIED) =====================
             DrawerExpandableSection(title = "Install Desktop", defaultExpanded = false) {
-                desktopEnvs.forEach { de ->
+                desktopEnvNames.forEach { name ->
                     Text(
-                        text = de.name,
+                        text = name,
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
                                 scope.launch { drawerState.close() }
-                                val script = buildDesktopInstallScript(distroId, de.packages)
+                                val script = buildDesktopInstallScript(distroId, name)
                                 onExecuteCommand(script)
                             }
                             .padding(vertical = 10.dp, horizontal = 12.dp)
@@ -338,7 +395,7 @@ val desktopEnvs = remember(distroId) {
         }
     )
 
-    // ===================== Commands dialogs (unchanged) =====================
+    // ===================== Commands dialogs =====================
     if (showCommandsDialog) {
         AlertDialog(
             onDismissRequest = { showCommandsDialog = false },
