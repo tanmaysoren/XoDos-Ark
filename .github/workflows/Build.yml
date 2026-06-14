@@ -2,7 +2,7 @@ name: Build xodosark APK (Fixed)
 
 on:
   workflow_dispatch:
-  push:
+  
 
 jobs:
   build:
@@ -51,7 +51,7 @@ jobs:
           targets: aarch64-linux-android
 
       # ⚙️ Build Rust native lib
-      - name: Build libxodosark.so
+      - name: Build libxodos2.so
         working-directory: xodosark-native
         run: |
           set -e
@@ -81,7 +81,7 @@ jobs:
           JNI_LIBS_DIR="../xodosark-app/app/src/main/jniLibs/arm64-v8a"
           mkdir -p "$JNI_LIBS_DIR"
 
-          cp -f target/aarch64-linux-android/release/libxodosark.so "$JNI_LIBS_DIR/"
+          cp -f target/aarch64-linux-android/release/libxodos2.so "$JNI_LIBS_DIR/"
 
       # 🏗️ Build APK (FIXED PATH HERE 🔥)
       - name: Build APK
