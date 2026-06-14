@@ -2,7 +2,7 @@ name: Build Wayland Android Libraries
 
 on:
   workflow_dispatch:
-  push:
+  
 
 jobs:
   build-wayland:
@@ -61,6 +61,7 @@ jobs:
         run: |
           export ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/${NDK_VERSION}
           cd xodosark-wayland
+          chmod +x -R libffi
           bash scripts/build-wayland-android.sh
 
       # 6. Stage the .so files

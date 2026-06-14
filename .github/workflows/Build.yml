@@ -6,9 +6,8 @@ on:
       version:
         description: 'Version string (e.g. 0.4.2)'
         required: false
-        default: 'dev'
-  push:
-
+        default: '0.6.0'
+  
 jobs:
   build:
     runs-on: ubuntu-latest

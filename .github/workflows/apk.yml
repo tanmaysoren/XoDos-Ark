@@ -6,9 +6,8 @@ on:
       version_tag:                          # ← renamed to match XoDos script
         description: 'Version tag (e.g. 0.4.2)'
         required: false
-        default: 'dev'
-  push:
-
+        default: '0.6.0'
+  
 permissions:
   contents: write                           # ← required to create releases
 
