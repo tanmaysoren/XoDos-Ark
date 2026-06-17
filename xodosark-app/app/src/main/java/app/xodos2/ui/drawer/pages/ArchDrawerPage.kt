@@ -15,6 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import app.xodos2.TerminalSessionIds
 import app.xodos2.shell.ShellFonts
@@ -27,10 +28,10 @@ import app.xodos2.ui.drawer.menu.DrawerMenuOptions
 import app.xodos2.ui.drawer.menu.DrawerScriptEditor
 import app.xodos2.ui.prefs.AppPrefs
 import app.xodos2.ui.runtime.TerminalSessionController
+import app.xodos2.ui.runtime.NativeInstallCoordinator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import androidx.compose.ui.platform.LocalContext
-import app.xodos2.ui.runtime.NativeInstallCoordinator
+import org.json.JSONObject
 
 // ----------------------------------------------------------------
 // Helper: build the correct installation script for any distro
@@ -38,53 +39,30 @@ import app.xodos2.ui.runtime.NativeInstallCoordinator
 private fun buildDesktopInstallScript(distro: String, envName: String): String {
     val cleanDistro = distro.lowercase().trim()
     
-    // 1. Resolve base graphical dependencies securely
     val (managerCmd, baseDeps) = when {
         cleanDistro.contains("debian") || cleanDistro.contains("ubuntu") || cleanDistro.contains("kali") || cleanDistro.contains("trisquel") -> {
-            Pair(
-                "apt update && apt install -y",
-                "mesa-utils xwayland libvulkan-dev mesa-vulkan-drivers libgl1-mesa-dri libglx-mesa0 libegl-mesa0 vulkan-tools dbus-x11"
-            )
+            Pair("apt update && apt install -y", "mesa-utils xwayland libvulkan-dev mesa-vulkan-drivers libgl1-mesa-dri libglx-mesa0 libegl-mesa0 vulkan-tools dbus-x11")
         }
         cleanDistro.contains("arch") || cleanDistro.contains("manjaro") || cleanDistro.contains("artix") -> {
-            Pair(
-                "pacman -Syu --noconfirm --needed",
-                "mesa-utils xorg-xwayland vulkan-devel mesa vulkan-tools dbus"
-            )
+            Pair("pacman -Syu --noconfirm --needed", "mesa-utils xorg-xwayland vulkan-devel mesa vulkan-tools dbus")
         }
         cleanDistro.contains("fedora") || cleanDistro.contains("almalinux") || cleanDistro.contains("rocky") -> {
-            Pair(
-                "dnf clean all && dnf install -y",
-                "mesa-utils xorg-x11-server-Xwayland vulkan-loader-devel mesa-dri-drivers vulkan-tools dbus-x11"
-            )
+            Pair("dnf clean all && dnf install -y", "mesa-utils xorg-x11-server-Xwayland vulkan-loader-devel mesa-dri-drivers vulkan-tools dbus-x11")
         }
         cleanDistro.contains("alpine") -> {
-            Pair(
-                "apk update && apk add",
-                "mesa-utils xwayland vulkan-loader mesa-dri-gallium vulkan-tools dbus"
-            )
+            Pair("apk update && apk add", "mesa-utils xwayland vulkan-loader mesa-dri-gallium vulkan-tools dbus")
         }
         cleanDistro.contains("void") -> {
-            Pair(
-                "xbps-install -Su && xbps-install -y",
-                "mesa-utils xwayland vulkan-loader mesa-dri vulkan-tools dbus"
-            )
+            Pair("xbps-install -Su && xbps-install -y", "mesa-utils xwayland vulkan-loader mesa-dri vulkan-tools dbus")
         }
         cleanDistro.contains("opensuse") -> {
-            Pair(
-                "zypper refresh && zypper install -y",
-                "mesa-utils xorg-x11-server-Xwayland vulkan-devel mesa-dri-drivers vulkan-tools dbus-1-x11"
-            )
+            Pair("zypper refresh && zypper install -y", "mesa-utils xorg-x11-server-Xwayland vulkan-devel mesa-dri-drivers vulkan-tools dbus-1-x11")
         }
-        else -> { // Fallback safely to Debian-style names
-            Pair(
-                "apt update && apt install -y",
-                "mesa-utils xwayland libvulkan-dev mesa-vulkan-drivers libgl1-mesa-dri libglx-mesa0 libegl-mesa0 vulkan-tools dbus-x11"
-            )
+        else -> {
+            Pair("apt update && apt install -y", "mesa-utils xwayland libvulkan-dev mesa-vulkan-drivers libgl1-mesa-dri libglx-mesa0 libegl-mesa0 vulkan-tools dbus-x11")
         }
     }
 
-    // 2. Resolve Audio Subsystem to prevent PipeWire vs PulseAudio conflicts
     val isModernDE = envName == "GNOME" || envName == "KDE Plasma"
     val audioDeps = if (isModernDE) {
         when {
@@ -106,7 +84,6 @@ private fun buildDesktopInstallScript(distro: String, envName: String): String {
         "pulseaudio pavucontrol"
     }
 
-    // 3. Resolve Desktop Environment specific package strings safely per distro
     val desktopPackages = when (envName) {
         "XFCE Desktop" -> when {
             cleanDistro.contains("arch") || cleanDistro.contains("manjaro") -> "xfce4 xfce4-goodies"
@@ -145,6 +122,14 @@ private fun buildDesktopInstallScript(distro: String, envName: String): String {
            "export PULSE_SERVER=127.0.0.1\n" +
            "echo 'Installation completed!'\n"
 }
+
+// ----------------------------------------------------------------
+// Data class for saved commands with title
+// ----------------------------------------------------------------
+private data class SavedCommand(
+    val title: String,
+    val command: String
+)
 
 // ----------------------------------------------------------------
 // ArchDrawerPage composable
@@ -188,16 +173,16 @@ fun ArchDrawerPage(
     val context = LocalContext.current
     val containerDisplayName = NativeInstallCoordinator.getContainerDisplayName(context, 1)
 
-    // Current container distro type
     val distroId = NativeInstallCoordinator.getContainerDistro(context, 1) ?: "linux"
 
     // ===================== Commands state =====================
     var showCommandsDialog by remember { mutableStateOf(false) }
     var showAddEditDialog by remember { mutableStateOf(false) }
     var editingIndex by remember { mutableStateOf<Int?>(null) }
+    var editTitle by remember { mutableStateOf("") }
     var editText by remember { mutableStateOf("") }
     var showDeleteConfirm by remember { mutableStateOf<Int?>(null) }
-    val savedCommands = remember { mutableStateListOf<String>() }
+    val savedCommands = remember { mutableStateListOf<SavedCommand>() }
 
     // ===================== DE Script Editor State =====================
     var editingDeName by remember { mutableStateOf<String?>(null) }
@@ -206,12 +191,32 @@ fun ArchDrawerPage(
     LaunchedEffect(showCommandsDialog) {
         if (showCommandsDialog) {
             savedCommands.clear()
-            savedCommands.addAll(AppPrefs.loadCommands(prefs))
+            val rawStrings = AppPrefs.loadCommands(prefs) // assumed to return List<String> of JSON strings
+            rawStrings.forEach { json ->
+                try {
+                    val obj = JSONObject(json)
+                    savedCommands.add(
+                        SavedCommand(
+                            title = obj.optString("title", ""),
+                            command = obj.optString("command", "")
+                        )
+                    )
+                } catch (_: Exception) {
+                    // fallback for old plain-text commands
+                    savedCommands.add(SavedCommand(title = "", command = json))
+                }
+            }
         }
     }
 
     fun persistCommands() {
-        AppPrefs.saveCommands(prefs, savedCommands.toList())
+        val jsonList = savedCommands.map { cmd ->
+            JSONObject().apply {
+                put("title", cmd.title)
+                put("command", cmd.command)
+            }.toString()
+        }
+        AppPrefs.saveCommands(prefs, jsonList)
     }
 
     // ===================== Desktop environment list =====================
@@ -372,7 +377,6 @@ fun ArchDrawerPage(
                 }
             }
 
-            // ===================== Install Desktop Section with Script Modification Features =====================
             DrawerExpandableSection(title = "Install Desktop", defaultExpanded = false) {
                 desktopEnvNames.forEach { name ->
                     val prefKey = "custom_install_script_${distroId}_${name.replace(" ", "_")}"
@@ -391,7 +395,6 @@ fun ArchDrawerPage(
                                 .weight(1f)
                                 .clickable {
                                     scope.launch { drawerState.close() }
-                                    // Load custom script from preference XML, fallback to hardcoded default template
                                     val script = prefs.getString(prefKey, null) ?: buildDesktopInstallScript(distroId, name)
                                     onExecuteCommand(script)
                                 }
@@ -477,7 +480,6 @@ fun ArchDrawerPage(
                 Row {
                     TextButton(
                         onClick = {
-                            // Reset back to dynamic default package composition layout rules
                             deScriptText = buildDesktopInstallScript(distroId, targetDe)
                         }
                     ) {
@@ -501,6 +503,7 @@ fun ArchDrawerPage(
                 Column {
                     TextButton(onClick = {
                         editingIndex = null
+                        editTitle = ""
                         editText = ""
                         showAddEditDialog = true
                     }) {
@@ -518,31 +521,31 @@ fun ArchDrawerPage(
                         )
                     } else {
                         LazyColumn {
-                            items(savedCommands.size) { index ->
-                                val cmd = savedCommands[index]
+                            items(items = savedCommands, key = { it.command }) { cmd ->
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .combinedClickable(
                                             onClick = {
-                                                onExecuteCommand(cmd)
+                                                onExecuteCommand(cmd.command)
                                                 showCommandsDialog = false
                                             },
                                             onLongClick = {
-                                                showDeleteConfirm = index
+                                                showDeleteConfirm = savedCommands.indexOf(cmd)
                                             }
                                         )
                                         .padding(vertical = 8.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        cmd,
+                                        text = cmd.title.ifBlank { cmd.command },
                                         modifier = Modifier.weight(1f),
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                     IconButton(onClick = {
-                                        editingIndex = index
-                                        editText = cmd
+                                        editingIndex = savedCommands.indexOf(cmd)
+                                        editTitle = cmd.title
+                                        editText = cmd.command
                                         showAddEditDialog = true
                                     }) {
                                         Icon(
@@ -568,22 +571,33 @@ fun ArchDrawerPage(
             onDismissRequest = { showAddEditDialog = false },
             title = { Text(if (editingIndex == null) "Add command" else "Edit command") },
             text = {
-                OutlinedTextField(
-                    value = editText,
-                    onValueChange = { editText = it },
-                    label = { Text("Shell command") },
-                    singleLine = false,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Column {
+                    OutlinedTextField(
+                        value = editTitle,
+                        onValueChange = { editTitle = it },
+                        label = { Text("Title") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = editText,
+                        onValueChange = { editText = it },
+                        label = { Text("Shell command") },
+                        singleLine = false,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             },
             confirmButton = {
                 TextButton(onClick = {
-                    val cmd = editText.trim()
-                    if (cmd.isNotEmpty()) {
+                    val title = editTitle.trim()
+                    val command = editText.trim()
+                    if (command.isNotEmpty()) {
                         if (editingIndex != null) {
-                            savedCommands[editingIndex!!] = cmd
+                            savedCommands[editingIndex!!] = SavedCommand(title, command)
                         } else {
-                            savedCommands.add(cmd)
+                            savedCommands.add(SavedCommand(title, command))
                         }
                         persistCommands()
                     }
@@ -601,7 +615,7 @@ fun ArchDrawerPage(
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = null },
             title = { Text("Delete command?") },
-            text = { Text("Remove \"${savedCommands[idx]}\"?") },
+            text = { Text("Remove \"${savedCommands[idx].title.ifBlank { savedCommands[idx].command }}\"?") },
             confirmButton = {
                 TextButton(onClick = {
                     savedCommands.removeAt(idx)
