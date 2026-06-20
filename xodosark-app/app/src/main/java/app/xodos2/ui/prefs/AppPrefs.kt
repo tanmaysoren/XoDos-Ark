@@ -8,12 +8,13 @@ object AppPrefs {
     private const val PREF_LEGACY_CONTAINER_SCRIPT = "container_startup_script"
 
     /** Stored pref: Arch + Wayland session. */
-    private const val LAUNCHER_PREF_WAYLAND = "Desktop"
+    const val LAUNCHER_PREF_WAYLAND = "Desktop"
 
     /** Stored pref: Debian + X11 (Lorie). */
-    private const val LAUNCHER_PREF_X11 = "X11Desktop"
+    const val LAUNCHER_PREF_X11 = "X11Desktop"
 
-    private const val LAUNCHER_PREF_TERMINAL = "Terminal"
+    /** Stored pref: Terminal. */
+    const val LAUNCHER_PREF_TERMINAL = "Terminal"
 
     /** Drawer labels (UI). */
     const val LAUNCHER_MENU_WAYLAND = "Wayland"
@@ -37,20 +38,19 @@ object AppPrefs {
         }
     }
 
-fun loadCommands(prefs: SharedPreferences): List<String> {
-    val count = prefs.getInt("saved_commands_count", 0)
-    return (0 until count).mapNotNull { prefs.getString("saved_command_$it", null) }
-}
+    fun loadCommands(prefs: SharedPreferences): List<String> {
+        val count = prefs.getInt("saved_commands_count", 0)
+        return (0 until count).mapNotNull { prefs.getString("saved_command_$it", null) }
+    }
 
-fun saveCommands(prefs: SharedPreferences, commands: List<String>) {
-    val editor = prefs.edit()
-    val oldCount = prefs.getInt("saved_commands_count", 0)
-    for (i in 0 until oldCount) editor.remove("saved_command_$i")
-    editor.putInt("saved_commands_count", commands.size)
-    commands.forEachIndexed { i, cmd -> editor.putString("saved_command_$i", cmd) }
-    editor.apply()
-}
-
+    fun saveCommands(prefs: SharedPreferences, commands: List<String>) {
+        val editor = prefs.edit()
+        val oldCount = prefs.getInt("saved_commands_count", 0)
+        for (i in 0 until oldCount) editor.remove("saved_command_$i")
+        editor.putInt("saved_commands_count", commands.size)
+        commands.forEachIndexed { i, cmd -> editor.putString("saved_command_$i", cmd) }
+        editor.apply()
+    }
 
     fun readLauncherDefault(prefs: SharedPreferences): String =
         migrateLauncherPref(prefs.getString(PREF_LAUNCHER_DEFAULT, LAUNCHER_PREF_WAYLAND))
@@ -99,21 +99,19 @@ fun saveCommands(prefs: SharedPreferences, commands: List<String>) {
             .apply()
     }
 
+    fun readWineDesktopStartupScript(prefs: SharedPreferences): String =
+        prefs.getString("wine_x11_startup_script", "") ?: ""
 
+    fun writeWineDesktopStartupScript(prefs: SharedPreferences, script: String) {
+        prefs.edit().putString("wine_x11_startup_script", script).apply()
+    }
 
-fun readWineDesktopStartupScript(prefs: SharedPreferences): String =
-    prefs.getString("wine_x11_startup_script", "") ?: ""
+    fun readArchX11DesktopStartupScript(prefs: SharedPreferences): String =
+        prefs.getString("arch_x11_startup_script", "") ?: ""
 
-fun writeWineDesktopStartupScript(prefs: SharedPreferences, script: String) {
-    prefs.edit().putString("wine_x11_startup_script", script).apply()
-}
-
-fun readArchX11DesktopStartupScript(prefs: SharedPreferences): String =
-    prefs.getString("arch_x11_startup_script", "") ?: ""
-
-fun writeArchX11DesktopStartupScript(prefs: SharedPreferences, script: String) {
-    prefs.edit().putString("arch_x11_startup_script", script).apply()
-}
+    fun writeArchX11DesktopStartupScript(prefs: SharedPreferences, script: String) {
+        prefs.edit().putString("arch_x11_startup_script", script).apply()
+    }
 
     fun readInt(prefs: SharedPreferences, key: String, defaultValue: Int): Int =
         prefs.getInt(key, defaultValue)
@@ -143,4 +141,3 @@ fun writeArchX11DesktopStartupScript(prefs: SharedPreferences, script: String) {
         |
         """.trimMargin()
 }
-

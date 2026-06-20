@@ -464,6 +464,48 @@ uiMode = UiMode.TERMINAL
     }
     AppLogger.log("Entered Arch X11 desktop")
 }
+
+/**
+ * Starts the Wayland backend (server + startup script) but stays in terminal mode.
+ */
+fun prepareWaylandBackend() {
+    if (!DisplayOrchestrator.prepareWaylandRuntimeAndStartServer(context, waylandRuntimeDir)) return
+    if (desktopServerId == 0L) {
+        desktopServerId = try {
+            WaylandBridge.nativeCreateServer(waylandRuntimeDir, desktopSocketName)
+        } catch (_: Throwable) { 0L }
+    }
+    if (desktopServerId != 0L) {
+        try { WaylandBridge.nativeSetActiveServer(desktopServerId) } catch (_: Throwable) {}
+    }
+    desktopHiddenInjectedKey = DisplayOrchestrator.runArchWaylandStartupScriptIfNeeded(
+        prefs = prefs,
+        desktopSocketName = desktopSocketName,
+        vulkanMode = desktopVulkanMode,
+        openGLMode = desktopOpenGLMode,
+        currentHiddenInjectedKey = desktopHiddenInjectedKey,
+    ).hiddenInjectedKey
+    AppLogger.log("Wayland backend prepared")
+}
+
+/**
+ * Starts the X11 server and runs the startup script, but stays in terminal mode.
+ */
+fun prepareX11Backend() {
+    X11Runtime.ensureX11ServerProcessStarted(context)
+    if (NativeBridge.isSessionAlive(TerminalSessionIds.ARCH_X11_DISPLAY)) {
+        AppLogger.log("X11 backend already running")
+        return
+    }
+    DisplayOrchestrator.runArchX11DesktopStartupScript(
+        context = context,
+        prefs = prefs,
+        headlessInjectHandler = headlessX11InjectHandler,
+        hasArchRootfs = hasContainer1,
+    )
+    AppLogger.log("X11 backend prepared")
+}
+
     fun enterArchWaylandDesktop() {
         if (!DisplayOrchestrator.prepareWaylandRuntimeAndStartServer(context, waylandRuntimeDir)) {
             menuOpen = false
@@ -791,6 +833,8 @@ File(context.filesDir, "drivers").listFiles { f ->
     }
     showDistroSelection = true
 }
+
+
 }
     // ----- wayland / X11 effects (unchanged) -----
     LaunchedEffect(showWayland) {
@@ -828,26 +872,48 @@ File(context.filesDir, "drivers").listFiles { f ->
         )
     }
 
-    LaunchedEffect(anyRootfsInstalled, startInTerminal) {
-        if (!anyRootfsInstalled) return@LaunchedEffect
-        var waited = 0
-        while (!NativeBridge.isSessionAlive(TerminalSessionIds.ARCH_TERMINAL) && waited < 256) {
-            delay(32)
-            waited++
-        }
-        if (!NativeBridge.isSessionAlive(TerminalSessionIds.ARCH_TERMINAL)) {
-            desktopLaunchBlackout = false
-            return@LaunchedEffect
-        }
-        desktopLaunchBlackout = false
-        if (uiMode == UiMode.ARCH_WAYLAND_DESKTOP) return@LaunchedEffect
-        uiMode = UiMode.TERMINAL
+ LaunchedEffect(anyRootfsInstalled, startInTerminal) {
+    if (!anyRootfsInstalled) return@LaunchedEffect
+
+    // Wait for the headless display sessions to be ready (native init already did)
+    var waited = 0
+    while (!NativeBridge.isSessionAlive(TerminalSessionIds.ARCH_WAYLAND_DISPLAY) && waited < 100) {
+        delay(20)
+        waited++
     }
+    // Even if wait fails, we try anyway – the prepare functions handle missing sessions internally
+
+    desktopLaunchBlackout = false
+    if (uiMode == UiMode.ARCH_WAYLAND_DESKTOP) return@LaunchedEffect
+    uiMode = UiMode.TERMINAL
+
+// ── Auto‑start backend based on saved launcher default ──
+val effectiveDefault = AppPrefs.migrateLauncherPref(launcherDefault)
+AppLogger.log("Auto-start check: launcherDefault = $launcherDefault, effective = $effectiveDefault")
+when (effectiveDefault) {
+    AppPrefs.LAUNCHER_PREF_WAYLAND -> {
+        AppLogger.log("Preparing Wayland backend...")
+        prepareWaylandBackend()
+    }
+    AppPrefs.LAUNCHER_PREF_X11 -> {
+        AppLogger.log("Preparing X11 backend...")
+        prepareX11Backend()
+    }
+    // Terminal or anything else → do nothing
+    else -> AppLogger.log("Default is Terminal – no backend to prepare")
+}
+    
+    
+}
+    
     
 // Keep the X11 task manager in sync with the active terminal session
 LaunchedEffect(terminalSessionState.activeSessionId) {
     prefs.edit().putInt("active_terminal_session_id", terminalSessionState.activeSessionId).apply()
 }
+
+
+
     // ----- graphics helpers -----
 fun checkAndPromptTurnipDrivers() {
     val missing = mutableListOf<Int>()
