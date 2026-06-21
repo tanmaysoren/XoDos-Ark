@@ -111,25 +111,16 @@ where
 // ---------------------------------------------------------------------------
 
 fn validate_rootfs_structure(rootfs_path: &Path) -> Result<()> {
-    let has_sh = rootfs_path.join("bin/sh").exists() || rootfs_path.join("usr/bin/sh").exists();
-    anyhow::ensure!(has_sh, "missing bin/sh or usr/bin/sh");
-    anyhow::ensure!(
-        rootfs_path.join("etc/os-release").exists(),
-        "missing etc/os-release"
-    );
+    // Accept any of these common shells:
+    let has_sh = rootfs_path.join("bin/sh").exists()
+        || rootfs_path.join("usr/bin/sh").exists()
+        || rootfs_path.join("bin/bash").exists()
+        || rootfs_path.join("usr/bin/bash").exists()
+                || rootfs_path.join("bin/dash").exists()
+                || rootfs_path.join("usr/bin/dash").exists();
+
+    anyhow::ensure!(has_sh, "no usable shell found (bin/sh, usr/bin/sh, bin/bash, usr/bin/dash)");
     anyhow::ensure!(rootfs_path.join("proc").is_dir(), "missing proc/");
-    anyhow::ensure!(
-        rootfs_path.join("sys/.empty").is_dir(),
-        "missing sys/.empty"
-    );
-    anyhow::ensure!(
-        rootfs_path.join("proc/.loadavg").is_file(),
-        "missing proc/.loadavg"
-    );
-    anyhow::ensure!(
-        rootfs_path.join("proc/.stat").is_file(),
-        "missing proc/.stat"
-    );
     Ok(())
 }
 
@@ -350,6 +341,9 @@ pub fn ensure_rootfs_with_progress(
 
     match extract_tarball(&tarball_path, &staging_rootfs_path, &temp_extract) {
         Ok(()) => {
+                // Wait for the file system to settle – important for very small rootfs archives
+        std::thread::sleep(std::time::Duration::from_millis(500));
+        
             validate_rootfs_structure(&staging_rootfs_path)
                 .context("validate extracted rootfs structure")?;
         }

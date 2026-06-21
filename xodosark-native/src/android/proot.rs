@@ -223,8 +223,31 @@ pub(super) fn build_exec_args(
         argv.push(
             CString::new(format!("--bind={}/sys/.empty:/sys/fs/selinux", rootfs.display())).unwrap(),
         );
-        argv.push(CString::new("/bin/bash").unwrap());
-        argv.push(CString::new("-i").unwrap());
+        // Choose a shell that actually exists
+let shell = if rootfs.join("bin/bash").exists() || rootfs.join("usr/bin/bash").exists() {
+    "/bin/bash"
+} else if rootfs.join("bin/sh").exists() || rootfs.join("usr/bin/sh").exists() {
+    "/bin/sh"
+} else if rootfs.join("bin/dash").exists() || rootfs.join("usr/bin/dash").exists() {
+    "/bin/dash"
+} else if rootfs.join("usr/bin/login").exists() {
+    // Last resort: use login to start a session
+    "/usr/bin/login"
+} else {
+    anyhow::bail!("no usable shell or login program found in rootfs");
+};
+
+argv.push(CString::new(shell).unwrap());
+
+// `-i` works for bash/sh/dash; `login` uses `-f` for autologin as root
+if shell == "/usr/bin/login" {
+    argv.push(CString::new("-f").unwrap());   // skip password prompt
+    argv.push(CString::new("root").unwrap());
+} else {
+    // Use login shell so that /etc/profile.d/99-xodos2-runtime.sh is sourced
+argv.push(CString::new("-l").unwrap());
+argv.push(CString::new("-i").unwrap());
+}
     } else {
         // ---------- fallback: Android system shell with container prefix ----------
        // argv.push(CString::new("-0").unwrap());
@@ -279,7 +302,7 @@ pub(super) fn build_exec_args(
     env.push(CString::new("VTEST_SOCKET_NAME=/run/xodos2-virgl/vtest.sock").unwrap());
     env.push(CString::new("VTEST_RENDERER_SOCKET_NAME=/run/xodos2-virgl/vtest.sock").unwrap());
     if is_proot_compatible(rootfs) {
-        env.insert(3, CString::new("PS1=[\\u@\\h \\W]\\$ ").unwrap());
+       // env.insert(3, CString::new("PS1=[\\u@\\h \\W]\\$ ").unwrap());
         env.push(CString::new("USER=root").unwrap());         
     env.push(CString::new("LOGNAME=root").unwrap());      
         env.push(
@@ -348,3 +371,4 @@ pub fn fork_pty_shell_in_rootfs(
         }
     }
 }
+
