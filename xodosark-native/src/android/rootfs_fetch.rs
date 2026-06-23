@@ -16,6 +16,7 @@ use std::path::Path;
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 use flate2::read::GzDecoder;
+use std::os::unix::fs::PermissionsExt;
 
 static DOWNLOAD_LOCK: Mutex<()> = Mutex::new(());
 
@@ -214,37 +215,67 @@ fn extract_tarball(tarball_path: &Path, dest: &Path, temp_extract: &Path) -> Res
         unpack_archive_safe(archive, temp_extract).context("extract tar.xz tarball")?;
     }
 
-    let subdirs: Vec<_> = std::fs::read_dir(temp_extract)
+    // List all entries in temp_extract
+    let entries: Vec<_> = std::fs::read_dir(temp_extract)
         .context("list temp dir")?
         .filter_map(|e| e.ok())
         .collect();
 
-    if subdirs.len() != 1 {
-        let file_list = subdirs.iter().map(|e| e.file_name().to_string_lossy().into_owned()).collect::<Vec<_>>();
-        log::error!("CRITICAL: Archive structure invalid. Found {} items: {:?}", subdirs.len(), file_list);
-        
-        anyhow::bail!(
-            "tarball has {} top-level entries, expected 1",
-            subdirs.len()
-        );
+    if entries.is_empty() {
+        anyhow::bail!("tarball extracted no files");
     }
-    
-    let top = subdirs[0].path();
+
+    // Helper to check if a directory looks like a rootfs
+    let is_rootfs_dir = |dir: &Path| -> bool {
+        dir.is_dir()
+            && (dir.join("bin").is_dir()
+                || dir.join("usr").is_dir()
+                || dir.join("var").is_dir()
+                || dir.join("root").is_dir()
+                || dir.join("etc").is_dir())
+    };
+
+    // Find the best candidate: first, look for a directory that looks like a rootfs
+    let top: std::path::PathBuf = entries
+        .iter()
+        .find(|e| is_rootfs_dir(&e.path()))
+        .map(|e| e.path())
+        .or_else(|| {
+            // If none match, fallback to the first directory
+            entries
+                .iter()
+                .find(|e| e.path().is_dir())
+                .map(|e| e.path())
+        })
+        .ok_or_else(|| anyhow::anyhow!("no rootfs directory found in tarball"))?;
+
     if !top.is_dir() {
-        anyhow::bail!("tarball top-level is not a directory");
+        anyhow::bail!("selected top-level entry is not a directory");
     }
+
     let _ = std::fs::remove_dir_all(dest);
     std::fs::rename(&top, dest).context("rename rootfs to dest")?;
-    std::fs::remove_dir_all(temp_extract).ok();
+
+    // Clean up any remaining files/dirs in temp_extract (metadata, headers, etc.)
+    let _ = std::fs::remove_dir_all(temp_extract);
+
     setup_fake_sysdata(dest)?;
+    patch_user_group_files(dest);
     Ok(())
 }
 
 fn setup_fake_sysdata(rootfs: &Path) -> Result<()> {
     let proc_dir = rootfs.join("proc");
     let sys_empty = rootfs.join("sys/.empty");
+
+    // Create directories (if they don't already exist)
     std::fs::create_dir_all(&proc_dir).context("create proc dir")?;
     std::fs::create_dir_all(&sys_empty).context("create sys/.empty")?;
+
+    // Ensure they are writable – some tarballs ship them as read‑only
+    let _ = std::fs::set_permissions(&proc_dir, std::fs::Permissions::from_mode(0o755));
+    let _ = std::fs::set_permissions(&sys_empty.parent().unwrap_or_else(|| Path::new("/")), std::fs::Permissions::from_mode(0o755));
+    let _ = std::fs::set_permissions(&sys_empty, std::fs::Permissions::from_mode(0o755));
 
     let write_if_missing = |path: &Path, content: &str| {
         if !path.exists() {
@@ -275,6 +306,7 @@ fn setup_fake_sysdata(rootfs: &Path) -> Result<()> {
 
     Ok(())
 }
+
 
 // ---------------------------------------------------------------------------
 // public entry points
@@ -430,4 +462,75 @@ pub fn ensure_rootfs_with_progress(
 
     report(100, "Done");
     Ok(())
+}
+
+
+fn patch_user_group_files(rootfs: &Path) {
+    // Get current Android username (e.g. "u0_a123")
+    let username = match std::process::Command::new("id")
+        .arg("-un")
+        .output()
+    {
+        Ok(o) => String::from_utf8_lossy(&o.stdout).trim().to_string(),
+        Err(_) => return,
+    };
+    let uid = unsafe { libc::getuid() };
+    let gid = unsafe { libc::getgid() };
+
+    // Get group names and IDs from the host
+    let group_names = match std::process::Command::new("id").arg("-Gn").output() {
+        Ok(o) => String::from_utf8_lossy(&o.stdout).trim().to_string(),
+        Err(_) => return,
+    };
+    let group_ids = match std::process::Command::new("id").arg("-G").output() {
+        Ok(o) => String::from_utf8_lossy(&o.stdout).trim().to_string(),
+        Err(_) => return,
+    };
+
+    let names: Vec<&str> = group_names.split_whitespace().collect();
+    let ids: Vec<u32> = group_ids
+        .split_whitespace()
+        .filter_map(|s| s.parse().ok())
+        .collect();
+
+    if names.len() != ids.len() {
+        log::warn!("patch_user_group_files: group name/id count mismatch");
+        return;
+    }
+
+    // Helper to append a line to a file that exists inside the rootfs
+    let append = |rel: &str, content: &str| {
+        let path = rootfs.join(rel);
+        if path.exists() {
+            let _ = std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o644));
+            if let Ok(mut f) = std::fs::OpenOptions::new().append(true).open(&path) {
+                let _ = writeln!(f, "{}", content);
+            }
+        }
+    };
+
+    // 1. /etc/passwd and /etc/shadow – add the current Android user
+    append(
+        "etc/passwd",
+        &format!(
+            "aid_{}:x:{}:{}:Termux:/:/sbin/nologin",
+            username, uid, gid
+        ),
+    );
+    append(
+        "etc/shadow",
+        &format!("aid_{}:*:18446:0:99999:7:::", username),
+    );
+
+    // 2. /etc/group and /etc/gshadow – add every supplementary group
+    for (name, grp_id) in names.iter().zip(ids.iter()) {
+        append(
+            "etc/group",
+            &format!("aid_{}:x:{}:root,aid_{}", name, grp_id, username),
+        );
+        append(
+            "etc/gshadow",
+            &format!("aid_{}:*::root,aid_{}", name, username),
+        );
+    }
 }
