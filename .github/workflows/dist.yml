@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# --- CONFIGURATION ---
+SOURCE_OWNER="termux"
+SOURCE_REPO="proot-distro"
+SOURCE_TAG="v4.17.3"
+TARGET_TAG="mirror-v4.17.3"
+TARGET_TITLE="Mirrored proot-distro v4.17.3"
+# ---------------------
+
+# Ensure gh and jq are installed
+if ! command -v gh &>/dev/null; then
+    echo "Error: gh (GitHub CLI) is not installed."
+    exit 1
+fi
+if ! command -v jq &>/dev/null; then
+    echo "Error: jq is not installed."
+    exit 1
+fi
+
+TMP_DIR=$(mktemp -d)
+trap 'rm -rf "$TMP_DIR"' EXIT
+
+echo "Fetching release info from ${SOURCE_OWNER}/${SOURCE_REPO}..."
+API_URL="https://api.github.com/repos/${SOURCE_OWNER}/${SOURCE_REPO}/releases/tags/${SOURCE_TAG}"
+RELEASE_JSON=$(curl -s -H "Accept: application/vnd.github+json" "$API_URL")
+ASSETS=$(echo "$RELEASE_JSON" | jq -r '.assets[].browser_download_url')
+
+if [ -z "$ASSETS" ]; then
+    echo "No assets found for tag ${SOURCE_TAG}."
+    exit 1
+fi
+
+echo "Downloading assets..."
+cd "$TMP_DIR"
+for URL in $ASSETS; do
+    FILENAME=$(basename "$URL")
+    echo "  $FILENAME"
+    curl -sL -O "$URL"
+done
+
+# Delete existing release if it exists
+if gh release view "$TARGET_TAG" --repo "$GITHUB_REPOSITORY" &>/dev/null; then
+    echo "Deleting existing release $TARGET_TAG..."
+    gh release delete "$TARGET_TAG" --repo "$GITHUB_REPOSITORY" --yes
+fi
+
+echo "Creating new release $TARGET_TAG..."
+gh release create "$TARGET_TAG" ./* \
+    --repo "$GITHUB_REPOSITORY" \
+    --title "$TARGET_TITLE" \
+    --notes "Mirrored from ${SOURCE_OWNER}/${SOURCE_REPO} release ${SOURCE_TAG}"
+
+echo "Done."
