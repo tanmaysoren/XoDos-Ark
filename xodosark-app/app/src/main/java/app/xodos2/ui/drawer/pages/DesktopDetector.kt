@@ -43,7 +43,18 @@ object DesktopDetector {
         // Common preamble for most desktops
         val commonSetup = """
         # Common environment
-        #export WAYLAND_DISPLAY=wayland-xodos2
+if [ -f /.x11 ]; then
+    export GDK_BACKEND='x11'
+    export QT_QPA_PLATFORM='xcb'
+    export XDG_SESSION_TYPE='x11'
+    unset WAYLAND_DISPLAY
+elif [ -f /.wayland ]; then
+    export WAYLAND_DISPLAY='wayland-xodos2'
+    export GDK_BACKEND='wayland'
+    export QT_QPA_PLATFORM='wayland'
+    export XDG_SESSION_TYPE='wayland'
+fi
+     
         export DISPLAY=:0
         export PULSE_SERVER=127.0.0.1
         # Ensure DBus is running

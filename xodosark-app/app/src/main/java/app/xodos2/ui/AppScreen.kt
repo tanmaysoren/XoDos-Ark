@@ -99,6 +99,38 @@ private fun x11ResolutionModeLabelForInternal(mode: String): String = when (mode
     else -> X11_MODE_LABEL_NATIVE
 }
 
+    /**
+ * Writes /.x11 or /.wayland into every installed container's rootfs.
+ * The unused marker is deleted so that only the active launcher marker exists.
+ */
+fun updateLauncherMarkers(context: Context, launcherDefault: String) {
+    val filesDir = context.filesDir
+    val markerName = when {
+        launcherDefault.contains("X11", ignoreCase = true) -> ".x11"
+        launcherDefault.contains("Wayland", ignoreCase = true) -> ".wayland"
+        else -> return   // Terminal – remove all markers if you want
+    }
+
+    val otherMarker = if (markerName == ".x11") ".wayland" else ".x11"
+
+    for (id in 1..3) {
+        val rootfs = File(filesDir, "containers/$id/")   
+        if (!rootfs.exists()) continue
+
+        // Create the marker for the chosen launcher
+        File(rootfs, markerName).apply {
+            if (!exists()) {
+                createNewFile()
+                // Optionally write a timestamp for debugging
+                writeText(System.currentTimeMillis().toString())
+            }
+        }
+
+        // Remove the opposite marker
+        File(rootfs, otherMarker).delete()
+    }
+}
+
 private fun x11ResolutionModeInternalForLabel(label: String): String = when (label) {
     X11_MODE_LABEL_NATIVE -> "native"
     X11_MODE_LABEL_SCALED -> "scaled"
@@ -730,12 +762,16 @@ fun openX11Settings() {
     fun cycleLauncherDefault() {
         launcherDefault = AppPrefs.cycleLauncherDefaultPref(launcherDefault)
         AppPrefs.writeLauncherDefault(prefs, launcherDefault)
+        updateLauncherMarkers(context, launcherDefault) 
     }
 
     fun setLauncherDefaultFromMenuLabel(menuLabel: String) {
         launcherDefault = AppPrefs.menuLabelToLauncherPref(menuLabel)
         AppPrefs.writeLauncherDefault(prefs, launcherDefault)
+        updateLauncherMarkers(context, launcherDefault) 
     }
+    
+
 
     // ----- initialisation effects (unchanged) -----
     LaunchedEffect(startInTerminal) {
@@ -902,7 +938,8 @@ File(context.filesDir, "drivers").listFiles { f ->
             previous = GraphicsModeController.Modes(desktopVulkanMode, desktopOpenGLMode),
             modes = GraphicsModeController.Modes(desktopVulkanMode, desktopOpenGLMode),
         )
-
+        
+updateLauncherMarkers(context, launcherDefault) 
         // If no container installed and the setup hasn't been acknowledged, show distro picker
      // if (!anyRootfsInstalled && !setupAlreadyCompleted) {
      if (!anyRootfsInstalled) {
