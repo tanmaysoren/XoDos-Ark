@@ -19,9 +19,9 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 
 enum class DrawerPage(val accent: Color) {
-    ARCH(Color(0xFF1793D1)),
-    ANDROID(Color(0xFF004E8C)),
-    DEBIAN(Color(0xFFD70A53)),
+    ARCH(Color(0xFFD300F9)),    // Electric Neon Purple
+    ANDROID(Color(0xFF8A2BE2)), // Deep Neon Violet / Indigo
+    DEBIAN(Color(0xFFFF007F)),  // Electric Neon Magenta / Pink
 }
 
 @Composable
