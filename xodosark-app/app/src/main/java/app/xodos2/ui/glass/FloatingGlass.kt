@@ -35,18 +35,9 @@ fun glassBlurModifier(): Modifier =
     }
 
 fun floatingGlassBrush(): Brush =
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        Brush.verticalGradient(
-            colors = listOf(
-                Color.White.copy(alpha = GlassHighlightApi31),
-                Color.White.copy(alpha = GlassFillApi31)
-            )
+    Brush.verticalGradient(
+        colors = listOf(
+            Color(0xFFD300F9).copy(alpha = 0.18f), // Neon Purple top highlight
+            Color(0xFF0D051C).copy(alpha = 0.90f)  // Deep cyber indigo-slate fill
         )
-    } else {
-        Brush.verticalGradient(
-            colors = listOf(
-                Color.White.copy(alpha = GlassHighlightLegacy),
-                Color.White.copy(alpha = GlassFillLegacy)
-            )
-        )
-    }
+    )
