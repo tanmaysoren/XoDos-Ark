@@ -2087,6 +2087,11 @@ ShellScreen(
                     if (drawerState.isOpen) drawerState.close() else drawerState.open()
                 }
             },
+            onSwipeRight = {
+                scope.launch {
+                    if (!drawerState.isOpen) drawerState.open()
+                }
+            },
             modifier = Modifier.fillMaxSize().graphicsLayer { clip = false }
         )
     }
