@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.CutCornerShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,6 +31,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -47,10 +50,12 @@ import kotlinx.coroutines.launch
 fun FloatingMenuOrb(
     prefs: SharedPreferences,
     onClick: () -> Unit,
+    onSwipeRight: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current
     val scope = rememberCoroutineScope()
+    val orbShape = CutCornerShape(12.dp)
 
     BoxWithConstraints(modifier.graphicsLayer { clip = false }) {
         val maxWpx = with(density) { maxWidth.toPx() }
@@ -102,6 +107,9 @@ fun FloatingMenuOrb(
                     )
                     .pointerInput(maxWpx, maxHpx) {
                         var movedOrbThisGesture = false
+                        var accumulatedX = 0f
+                        var accumulatedY = 0f
+                        var swipeTriggered = false
 
                         fun endDragGesture() {
                             if (movedOrbThisGesture) persistCenter()
@@ -113,10 +121,23 @@ fun FloatingMenuOrb(
                         }
 
                         detectDragGestures(
-                            onDragStart = { isOrbDragging = true },
+                            onDragStart = {
+                                isOrbDragging = true
+                                accumulatedX = 0f
+                                accumulatedY = 0f
+                                swipeTriggered = false
+                            },
                             onDragCancel = { endDragGesture() },
                             onDragEnd = { endDragGesture() },
                             onDrag = { _, dragAmount ->
+                                accumulatedX += dragAmount.x
+                                accumulatedY += dragAmount.y
+
+                                if (!swipeTriggered && accumulatedX > 100f && Math.abs(accumulatedY) < accumulatedX * 0.8f) {
+                                    swipeTriggered = true
+                                    onSwipeRight?.invoke()
+                                }
+
                                 val newCx =
                                     (centerXFrac * maxWpx + dragAmount.x).coerceIn(minCx, maxCx)
                                 val newCy =
@@ -128,13 +149,16 @@ fun FloatingMenuOrb(
                         )
                     }
             ) {
+                // Background glass structure - Octagonal
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .clip(CircleShape)
+                        .clip(orbShape)
                         .then(glassBlurModifier())
-                        .background(brush = floatingGlassBrush(), shape = CircleShape)
+                        .background(brush = floatingGlassBrush(), shape = orbShape)
                 )
+                
+                // Holographic launcher logo
                 Image(
                     painter = painterResource(id = R.drawable.ic_launcher_foreground),
                     contentDescription = null,
@@ -143,13 +167,27 @@ fun FloatingMenuOrb(
                         .padding(ORB_LOGO_INSET_DP),
                     contentScale = ContentScale.Fit
                 )
+                
+                // Inner tech border (thin, pulsing accent)
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .padding(3.dp)
+                        .border(
+                            width = 1.dp,
+                            color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f),
+                            shape = CutCornerShape(10.dp)
+                        )
+                )
+
+                // Outer primary tech glowing rim
                 Box(
                     Modifier
                         .fillMaxSize()
                         .border(
-                            width = FloatingGlassRimDp,
-                            color = MaterialTheme.colorScheme.outline.copy(alpha = FloatingGlassRimAlpha),
-                            shape = CircleShape
+                            width = 1.5.dp,
+                            color = MaterialTheme.colorScheme.outline,
+                            shape = orbShape
                         )
                 )
             }
