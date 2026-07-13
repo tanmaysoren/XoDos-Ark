@@ -306,7 +306,7 @@ fun ShellScreen(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT 
                 )
-                setBackgroundColor(Color.parseColor("#1A1A2E"))
+                setBackgroundColor(Color.parseColor("#05050C"))
             }
 
             val keysScroll = HorizontalScrollView(ctx).apply {
@@ -450,14 +450,27 @@ private fun rebuildExtraKeys(
     var ctrlButton: TextView? = null
     var altButton: TextView? = null
 
-    val bgColor = Color.parseColor("#1A1A2E")
-    val textColor = Color.parseColor("#BB86FC")
-    val strokeColor = Color.parseColor("#BB86FC")
-    val activeTextColor = Color.parseColor("#FFD700")
+    val bgColor = Color.parseColor("#04010A")
+    val textColor = Color.parseColor("#D300F9")        // Electric Neon Purple
+    val strokeColor = Color.parseColor("#D300F9")      // Electric Neon Purple
+    val activeTextColor = Color.parseColor("#FF007F")  // Electric Neon Pink / Magenta
 
     fun updateButtonColors() {
         ctrlButton?.setTextColor(if (viewClient.ctrlActive) activeTextColor else textColor)
         altButton?.setTextColor(if (viewClient.altActive) activeTextColor else textColor)
+        // Highlight active modifier button borders
+        ctrlButton?.background = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            setColor(bgColor)
+            setStroke(1.dpToPx(context), if (viewClient.ctrlActive) activeTextColor else strokeColor)
+            cornerRadius = 5f * context.resources.displayMetrics.density
+        }
+        altButton?.background = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            setColor(bgColor)
+            setStroke(1.dpToPx(context), if (viewClient.altActive) activeTextColor else strokeColor)
+            cornerRadius = 5f * context.resources.displayMetrics.density
+        }
     }
 
     viewClient.onModifierReset = { terminalView.post { updateButtonColors() } }
@@ -484,6 +497,7 @@ private fun rebuildExtraKeys(
             textSize = scaledTextSize
             includeFontPadding = false
             isAllCaps = false
+            typeface = android.graphics.Typeface.MONOSPACE
             isClickable = !isTransparent
             isFocusable = !isTransparent
             
