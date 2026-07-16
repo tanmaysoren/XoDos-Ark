@@ -26,7 +26,7 @@ object DesktopInstallScripts {
                 Pair(
                     "pacman -Syu --noconfirm --needed --overwrite \"*\" || true\n" +
                     "pacman -S --noconfirm --needed --overwrite \"*\"",
-                    "mesa-utils xorg-server xorg-xwayland vulkan-devel mesa vulkan-tools dbus"
+                    "mesa-utils xorg-server xorg-xwayland vulkan-devel mesa vulkan-tools  vulkan-virtio dbus"
                 )
             cleanDistro.contains("fedora") || cleanDistro.contains("almalinux") || cleanDistro.contains("rocky") ->
                 Pair(
