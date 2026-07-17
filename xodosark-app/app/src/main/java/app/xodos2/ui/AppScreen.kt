@@ -2374,11 +2374,10 @@ if (showDistroSelection) {
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(
                                                 text = distro.distroName.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() },
-                                                fontWeight = FontWeight.Black,
+                                                fontWeight = FontWeight.Bold,
                                                 color = Color.White,
                                                 style = MaterialTheme.typography.titleMedium.copy(
-                                                    fontSize = 25.sp,
-                                                    letterSpacing = (-0.5).sp
+                                                    fontSize = 19.sp
                                                 )
                                             )
                                             Spacer(modifier = Modifier.height(2.dp))
