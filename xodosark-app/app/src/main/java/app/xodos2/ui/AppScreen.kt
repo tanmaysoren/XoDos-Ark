@@ -459,14 +459,13 @@ var turnipDownloadInProgress by remember { mutableStateOf(false) }
     // ── Distro installation helpers ──────────────────────────────
 fun installIntoSlot(distro: DistroDescriptor, containerId: Int) {
     scope.launch {
-        
+        installInProgress = true
         try {
             val ok = NativeInstallCoordinator.installDistroToContainer(
                 context = context,
                 distro = distro,
                 containerId = containerId,
                 onProgress = { pct, msg ->
-                installInProgress = true
                   installProgress = pct to msg },
                 onConfirmOverwrite = {
                     // We'll suspend here until the user responds.
@@ -509,14 +508,13 @@ fun installIntoSlot(distro: DistroDescriptor, containerId: Int) {
 
 fun extractLocalIntoSlot(uri: Uri, containerId: Int) {
     scope.launch {
-        
+        installInProgress = true
         try {
             val ok = NativeInstallCoordinator.extractRootfsFromUriToContainer(
                 context = context,
                 uri = uri,
                 containerId = containerId,
                 onProgress = { pct, msg ->
-                installInProgress = true
                   installProgress = pct to msg },
                 onConfirmOverwrite = {
                 pendingOverwriteSlot = containerId 
