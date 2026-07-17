@@ -242,6 +242,7 @@ val payload = buildString {
                 b.append("export LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu/gl4es:\$LD_LIBRARY_PATH\n")
             }
             else -> {
+                b.append("unset VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VK_DRIVER_FILES VN_DEBUG || true\n")             
                 b.append("export GALLIUM_DRIVER=llvmpipe\n")
                 b.append("export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe\n")
                 b.append("export LIBGL_ALWAYS_SOFTWARE=1\n")
@@ -249,10 +250,7 @@ val payload = buildString {
         }
         when (vulkanMode) {
             "VENUS" -> {
-                b.append("export VKD3D_FEATURE_LEVEL=12_0\n")
-                b.append("export MESA_LOADER_DRIVER_OVERRIDE=zink\n")
-                b.append("export MESA_VK_WSI_PRESENT_MODE=mailbox\n")
-                b.append("export GALLIUM_DRIVER=zink\n")
+                
                 b.append("export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/virtio_icd.json\n")
                 b.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/virtio_icd.json\n")
                 b.append("export VN_DEBUG=vtest\n")
@@ -269,6 +267,7 @@ val payload = buildString {
                 b.append("export TU_DEBUG=noconform\n")
             }
             else -> {
+                b.append("unset VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VK_DRIVER_FILES VN_DEBUG || true\n")           
                 b.append("export GALLIUM_DRIVER=llvmpipe\n")
                 b.append("unset VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VK_DRIVER_FILES VN_DEBUG || true\n")
             }
@@ -313,8 +312,6 @@ val payload = buildString {
         }
         when (vulkan) {
             "VENUS" -> {
-                sb.append("export VKD3D_FEATURE_LEVEL=12_0\n")
-                sb.append("export MESA_LOADER_DRIVER_OVERRIDE=zink\n")
                 sb.append("export MESA_VK_WSI_PRESENT_MODE=mailbox\n")
                 sb.append("export TU_DEBUG=noconform\n")
                 sb.append("export GALLIUM_DRIVER=zink\n")
@@ -325,8 +322,6 @@ val payload = buildString {
                 sb.append("export VTEST_RENDERER_SOCKET_NAME=/run/xodos2-virgl/venus.sock\n")
             }
             "TURNIP" -> {
-                sb.append("export VKD3D_FEATURE_LEVEL=12_0\n")
-                sb.append("export MESA_LOADER_DRIVER_OVERRIDE=zink\n")
                 sb.append("export MESA_VK_WSI_PRESENT_MODE=mailbox\n")
                 sb.append("export TU_DEBUG=noconform\n")             
                 sb.append("export GALLIUM_DRIVER=zink\n")
@@ -335,7 +330,7 @@ val payload = buildString {
                 sb.append("export TU_DEBUG=noconform\n")
             }
             else -> {
-                sb.append("unset VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VK_DRIVER_FILES VN_DEBUG || true\n")
+                sb.append("unset VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE VK_DRIVER_FILES VN_DEBUG || true\n")
                 sb.append("export VK_ICD_FILENAMES=/dev/null\n")
             }
         }
