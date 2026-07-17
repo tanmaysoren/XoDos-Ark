@@ -124,10 +124,13 @@ Minimum Android version: **10 (API 29)**. The ark sails on even older devices.
 ### 🔨 help Building the Ark from Source
 
 1. **Clone the repository**
-   ```bash
+  ```  
    git clone https://github.com/xodiosx/XoDos-Ark.git
-   cd XoDos-Ark
+   cd XoDos-Ark   
 ```
+
+### thanks to 💜
+@tanmaysoren for UI design and improvements [fork](https://github.com/tanmaysoren/XoDos-Ark)
 
 ## 🙏 Acknowledgments
 
