@@ -346,10 +346,7 @@ val pickBootstrapFile = rememberLauncherForActivityResult(
 ) { uri: Uri? ->
     if (uri != null) {
         val exists = try {
-            context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                cursor.moveToFirst()
-                cursor.getLong(cursor.getColumnIndexOrThrow(OpenableColumns.SIZE)) > -1
-            } ?: false
+            context.contentResolver.openInputStream(uri)?.use { true } ?: false
         } catch (e: Exception) { false }
 
         if (exists) {
@@ -550,11 +547,7 @@ fun extractLocalIntoSlot(uri: Uri, containerId: Int) {
     if (uri != null) {
         // Verify the file still exists
         val exists = try {
-            context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                cursor.moveToFirst()
-                // A valid file will have a size column; if size is > -1 it exists
-                cursor.getLong(cursor.getColumnIndexOrThrow(OpenableColumns.SIZE)) > -1
-            } ?: false
+            context.contentResolver.openInputStream(uri)?.use { true } ?: false
         } catch (e: Exception) { false }
 
         if (exists) {
