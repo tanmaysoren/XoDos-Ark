@@ -2234,8 +2234,8 @@ if (showDistroSelection) {
             },
             vulkanOptions = VULKAN_MODES,
             openGLOptions = when (desktopVulkanMode) {
-                "TURNIP" -> listOf("ZINK", "VIRGL", "GL4ES")
-                "VENUS"  -> listOf("LLVMPIPE", "VIRGL", "ZINK")
+                "TURNIP" -> listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
+                "VENUS"  -> listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
                 else     -> OPENGL_MODES
             },
             hasArchRootfs = hasContainer1,
@@ -2290,8 +2290,8 @@ if (showDistroSelection) {
             },
             vulkanOptions = VULKAN_MODES,
             openGLOptions = when (desktopVulkanMode) {
-                "TURNIP" -> listOf("ZINK", "VIRGL", "GL4ES")
-                "VENUS"  -> listOf("LLVMPIPE", "VIRGL", "ZINK")
+                "TURNIP" -> listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
+                "VENUS"  -> listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
                 else     -> OPENGL_MODES
             },
             hasDebianRootfs = hasContainer2,
@@ -2350,8 +2350,8 @@ if (showDistroSelection) {
             },
             vulkanOptions = VULKAN_MODES,
             openGLOptions = when (desktopVulkanMode) {
-                "TURNIP" -> listOf("ZINK", "VIRGL", "GL4ES")
-                "VENUS"  -> listOf("LLVMPIPE", "VIRGL", "ZINK")
+                "TURNIP" -> listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
+                "VENUS"  -> listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
                 else     -> OPENGL_MODES
             },
             hasWineRootfs = hasContainer3,
