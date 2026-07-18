@@ -345,14 +345,47 @@ val pickBootstrapFile = rememberLauncherForActivityResult(
     contract = ActivityResultContracts.OpenDocument()
 ) { uri: Uri? ->
     if (uri != null) {
-        val exists = try {
-            context.contentResolver.openInputStream(uri)?.use { true } ?: false
-        } catch (e: Exception) { false }
+        val inputStream = try {
+            context.contentResolver.openInputStream(uri)
+        } catch (e: Exception) {
+            null
+        }
 
-        if (exists) {
-            bootstrapUri = uri
-        } else {
-            Toast.makeText(context, "Selected file no longer exists.", Toast.LENGTH_LONG).show()
+        if (inputStream == null) {
+            Toast.makeText(context, "Cannot open selected file.", Toast.LENGTH_LONG).show()
+            return@rememberLauncherForActivityResult
+        }
+
+        scope.launch {
+            bootstrapInProgress = true
+            bootstrapProgress = 0 to "Copying selected file..."
+            try {
+                val cacheDir = context.cacheDir
+                val tempFile = File(cacheDir, "bootstrap_temp.tar.xz")
+                val success = withContext(Dispatchers.IO) {
+                    try {
+                        tempFile.delete()
+                        inputStream.use { input ->
+                            tempFile.outputStream().use { output ->
+                                input.copyTo(output)
+                            }
+                        }
+                        true
+                    } catch (e: Exception) {
+                        false
+                    }
+                }
+
+                bootstrapInProgress = false
+                if (success && tempFile.exists() && tempFile.length() > 0) {
+                    bootstrapUri = Uri.fromFile(tempFile)
+                } else {
+                    Toast.makeText(context, "Failed to copy selected file.", Toast.LENGTH_LONG).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                bootstrapInProgress = false
+            }
         }
     }
 }
@@ -543,33 +576,45 @@ fun extractLocalIntoSlot(file: File, containerId: Int) {
     contract = ActivityResultContracts.OpenDocument()
 ) { uri: Uri? ->
     if (uri != null) {
+        var fileName = "local_distro.tar.xz"
+        try {
+            context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val idx = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                    if (idx != -1) {
+                        val name = cursor.getString(idx)
+                        if (name.isNotEmpty()) {
+                            fileName = name
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            // Ignore query failure, keep default filename
+        }
+
+        val inputStream = try {
+            context.contentResolver.openInputStream(uri)
+        } catch (e: Exception) {
+            null
+        }
+
+        if (inputStream == null) {
+            Toast.makeText(context, "Cannot open selected file.", Toast.LENGTH_LONG).show()
+            return@rememberLauncherForActivityResult
+        }
+
         scope.launch {
             installInProgress = true
             installProgress = 0 to "Copying selected file..."
             try {
-                var fileName = "local_distro.tar.xz"
-                try {
-                    context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                        if (cursor.moveToFirst()) {
-                            val idx = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
-                            if (idx != -1) {
-                                val name = cursor.getString(idx)
-                                if (name.isNotEmpty()) {
-                                    fileName = name
-                                }
-                            }
-                        }
-                    }
-                } catch (e: Exception) {
-                    // Ignore query failure, keep default filename
-                }
-
                 val ext = if (fileName.lowercase().endsWith(".gz") || fileName.lowercase().endsWith(".tgz")) ".tar.gz" else ".tar.xz"
                 val cacheFile = File(context.cacheDir, "pending_local_install$ext")
 
                 val success = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                     try {
-                        context.contentResolver.openInputStream(uri)?.use { input ->
+                        cacheFile.delete()
+                        inputStream.use { input ->
                             cacheFile.outputStream().use { output ->
                                 input.copyTo(output)
                             }
@@ -1243,10 +1288,19 @@ LaunchedEffect(bootstrapUri) {
     try {
         // 1. Copy selected file to cache
         withContext(Dispatchers.IO) {
-            context.contentResolver.openInputStream(uri)?.use { input ->
-                tempArchive.outputStream().use { output ->
-                    input.copyTo(output)
+            if (uri.scheme == "file") {
+                val path = uri.path ?: throw Exception("Invalid local file path")
+                File(path).inputStream().use { input ->
+                    tempArchive.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
                 }
+            } else {
+                context.contentResolver.openInputStream(uri)?.use { input ->
+                    tempArchive.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                } ?: throw Exception("Could not open stream from selected document")
             }
         }
 
