@@ -31,6 +31,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.text.font.FontWeight
+import app.xodos2.ui.glassDialogStyle
+import androidx.compose.ui.graphics.Color as ComposeColor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -135,7 +142,9 @@ fun ShellScreen(
         
         AlertDialog(
             onDismissRequest = { showExtraKeysEditor = false },
-            title = { Text("Edit Extra Keys") },
+            containerColor = ComposeColor.Transparent,
+            modifier = Modifier.glassDialogStyle(),
+            title = { Text("Edit Extra Keys", fontWeight = FontWeight.Bold, color = ComposeColor.White) },
             text = {
                 Column {
                     OutlinedTextField(
@@ -146,18 +155,26 @@ fun ShellScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(180.dp)
+                            .height(180.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = ComposeColor(0xFFC3B6F9),
+                            unfocusedBorderColor = ComposeColor.White.copy(alpha = 0.2f),
+                            focusedLabelColor = ComposeColor(0xFFC3B6F9),
+                            unfocusedLabelColor = ComposeColor.White.copy(alpha = 0.5f),
+                            focusedTextColor = ComposeColor.White,
+                            unfocusedTextColor = ComposeColor.White
+                        )
                     )
                     Text(
                         text = "Supported keys: CTRL, ALT, ESC, TAB, HOME, END, PGUP, PGDN, UP, DOWN, LEFT, RIGHT, COPY, PASTE, or any single character (e.g., '-', '/').\n\nMust be a valid 2D JSON Array.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = androidx.compose.ui.graphics.Color.Gray,
+                        color = ComposeColor.White.copy(alpha = 0.6f),
                         modifier = Modifier.padding(top = 8.dp)
                     )
                     if (errorText.isNotEmpty()) {
                         Text(
                             text = errorText, 
-                            color = androidx.compose.ui.graphics.Color.Red, 
+                            color = ComposeColor(0xFFF44336), 
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(top = 4.dp)
                         )
@@ -165,23 +182,39 @@ fun ShellScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
-                    try {
-                        JSONArray(editingJson) 
-                        extraKeysJson = editingJson
-                        sharedPrefs.edit().putString("extra_keys_layout", editingJson).apply()
-                        showExtraKeysEditor = false
-                    } catch (e: Exception) {
-                        errorText = "Invalid JSON format: ${e.localizedMessage}"
-                    }
-                }) { Text("Save") }
+                TextButton(
+                    onClick = {
+                        try {
+                            JSONArray(editingJson) 
+                            extraKeysJson = editingJson
+                            sharedPrefs.edit().putString("extra_keys_layout", editingJson).apply()
+                            showExtraKeysEditor = false
+                        } catch (e: Exception) {
+                            errorText = "Invalid JSON format: ${e.localizedMessage}"
+                        }
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = ComposeColor(0xFFC3B6F9))
+                ) { 
+                    Text("Save", fontWeight = FontWeight.Bold) 
+                }
             },
             dismissButton = {
                 Row {
-                    TextButton(onClick = {
-                        editingJson = DEFAULT_EXTRA_KEYS_JSON
-                    }) { Text("Reset") }
-                    TextButton(onClick = { showExtraKeysEditor = false }) { Text("Close") }
+                    TextButton(
+                        onClick = {
+                            editingJson = DEFAULT_EXTRA_KEYS_JSON
+                        },
+                        colors = ButtonDefaults.textButtonColors(contentColor = ComposeColor(0xFFC3B6F9))
+                    ) { 
+                        Text("Reset") 
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(
+                        onClick = { showExtraKeysEditor = false },
+                        colors = ButtonDefaults.textButtonColors(contentColor = ComposeColor.White.copy(alpha = 0.7f))
+                    ) { 
+                        Text("Close") 
+                    }
                 }
             }
         )
