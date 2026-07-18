@@ -151,11 +151,11 @@ echo "Kali base environment aligned."
         val desktopPackages = when (envName) {
             "XFCE Desktop" -> when {
                 cleanDistro.contains("arch") || cleanDistro.contains("manjaro") -> "xfce4 xfce4-goodies"
-                cleanDistro.contains("alpine") -> "xfce4*"
+                cleanDistro.contains("alpine") -> "xfce4"
                 else -> "xfce4*"
             }
             "LXQt Desktop" -> when {
-                cleanDistro.contains("arch") || cleanDistro.contains("manjaro") -> "lxqt* lxqt-themes featherpad"
+                cleanDistro.contains("arch") || cleanDistro.contains("manjaro") -> "lxqt lxqt-themes featherpad"
                 cleanDistro.contains("debian") || cleanDistro.contains("ubuntu") -> "lxqt* openbox"
                 cleanDistro.contains("fedora") -> "@lxqt-desktop-environment qt5-qtbase-gui qt6-qtbase-gui"
                 else -> "lxqt*"
@@ -167,7 +167,7 @@ echo "Kali base environment aligned."
                 else -> "plasma-desktop"
             }
             "GNOME" -> when {
-                cleanDistro.contains("arch") || cleanDistro.contains("manjaro") -> "gnome* gnome-tweaks"
+                cleanDistro.contains("arch") || cleanDistro.contains("manjaro") -> "gnome gnome-tweaks"
                 cleanDistro.contains("debian") || cleanDistro.contains("ubuntu") -> "gnome-core"
                 cleanDistro.contains("fedora") -> "@gnome-desktop"
                 else -> "gnome*"
@@ -177,7 +177,7 @@ echo "Kali base environment aligned."
                 else -> "mate-desktop-environment"
             }
             "Cinnamon" -> when {
-                cleanDistro.contains("arch") || cleanDistro.contains("manjaro") -> "cinnamon* nemo"
+                cleanDistro.contains("arch") || cleanDistro.contains("manjaro") -> "cinnamon nemo"
                 else -> "cinnamon-desktop-environment"
             }
             else -> ""
