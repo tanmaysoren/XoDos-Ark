@@ -345,47 +345,17 @@ val pickBootstrapFile = rememberLauncherForActivityResult(
     contract = ActivityResultContracts.OpenDocument()
 ) { uri: Uri? ->
     if (uri != null) {
-        val inputStream = try {
-            context.contentResolver.openInputStream(uri)
-        } catch (e: Exception) {
-            null
-        }
+        val exists = try {
+            context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                cursor.moveToFirst()
+                cursor.getLong(cursor.getColumnIndexOrThrow(OpenableColumns.SIZE)) > -1
+            } ?: false
+        } catch (e: Exception) { false }
 
-        if (inputStream == null) {
-            Toast.makeText(context, "Cannot open selected file.", Toast.LENGTH_LONG).show()
-            return@rememberLauncherForActivityResult
-        }
-
-        scope.launch {
-            bootstrapInProgress = true
-            bootstrapProgress = 0 to "Copying selected file..."
-            try {
-                val cacheDir = context.cacheDir
-                val tempFile = File(cacheDir, "bootstrap_temp.tar.xz")
-                val success = withContext(Dispatchers.IO) {
-                    try {
-                        tempFile.delete()
-                        inputStream.use { input ->
-                            tempFile.outputStream().use { output ->
-                                input.copyTo(output)
-                            }
-                        }
-                        true
-                    } catch (e: Exception) {
-                        false
-                    }
-                }
-
-                bootstrapInProgress = false
-                if (success && tempFile.exists() && tempFile.length() > 0) {
-                    bootstrapUri = Uri.fromFile(tempFile)
-                } else {
-                    Toast.makeText(context, "Failed to copy selected file.", Toast.LENGTH_LONG).show()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
-                bootstrapInProgress = false
-            }
+        if (exists) {
+            bootstrapUri = uri
+        } else {
+            Toast.makeText(context, "Selected file no longer exists.", Toast.LENGTH_LONG).show()
         }
     }
 }
@@ -397,7 +367,7 @@ val pickBootstrapFile = rememberLauncherForActivityResult(
     var showDistroSelection by remember { mutableStateOf(false) }
     var showSlotPicker by remember { mutableStateOf(false) }
     var pendingDistro by remember { mutableStateOf<DistroDescriptor?>(null) }
-    var pendingLocalFile by remember { mutableStateOf<File?>(null) }
+    var pendingLocalUri by remember { mutableStateOf<Uri?>(null) }
     val setupAlreadyCompleted = prefs.getBoolean("setup_done", false)
 
 
@@ -492,13 +462,14 @@ var turnipDownloadInProgress by remember { mutableStateOf(false) }
     // ── Distro installation helpers ──────────────────────────────
 fun installIntoSlot(distro: DistroDescriptor, containerId: Int) {
     scope.launch {
-        installInProgress = true
+        
         try {
             val ok = NativeInstallCoordinator.installDistroToContainer(
                 context = context,
                 distro = distro,
                 containerId = containerId,
                 onProgress = { pct, msg ->
+                installInProgress = true
                   installProgress = pct to msg },
                 onConfirmOverwrite = {
                     // We'll suspend here until the user responds.
@@ -539,15 +510,16 @@ fun installIntoSlot(distro: DistroDescriptor, containerId: Int) {
     }
 }
 
-fun extractLocalIntoSlot(file: File, containerId: Int) {
+fun extractLocalIntoSlot(uri: Uri, containerId: Int) {
     scope.launch {
-        installInProgress = true
+        
         try {
-            val ok = NativeInstallCoordinator.extractRootfsFromFileToContainer(
+            val ok = NativeInstallCoordinator.extractRootfsFromUriToContainer(
                 context = context,
-                file = file,
+                uri = uri,
                 containerId = containerId,
                 onProgress = { pct, msg ->
+                installInProgress = true
                   installProgress = pct to msg },
                 onConfirmOverwrite = {
                 pendingOverwriteSlot = containerId 
@@ -562,7 +534,7 @@ fun extractLocalIntoSlot(file: File, containerId: Int) {
                 showDistroSelection = false
                 showSlotPicker = false
                 pendingDistro = null
-                pendingLocalFile = null
+                pendingLocalUri = null
                 prefs.edit().putBoolean("setup_done", true).apply()
                 installDone = true    
             }
@@ -576,66 +548,20 @@ fun extractLocalIntoSlot(file: File, containerId: Int) {
     contract = ActivityResultContracts.OpenDocument()
 ) { uri: Uri? ->
     if (uri != null) {
-        var fileName = "local_distro.tar.xz"
-        try {
+        // Verify the file still exists
+        val exists = try {
             context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                if (cursor.moveToFirst()) {
-                    val idx = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
-                    if (idx != -1) {
-                        val name = cursor.getString(idx)
-                        if (name.isNotEmpty()) {
-                            fileName = name
-                        }
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            // Ignore query failure, keep default filename
-        }
+                cursor.moveToFirst()
+                // A valid file will have a size column; if size is > -1 it exists
+                cursor.getLong(cursor.getColumnIndexOrThrow(OpenableColumns.SIZE)) > -1
+            } ?: false
+        } catch (e: Exception) { false }
 
-        val inputStream = try {
-            context.contentResolver.openInputStream(uri)
-        } catch (e: Exception) {
-            null
-        }
-
-        if (inputStream == null) {
-            Toast.makeText(context, "Cannot open selected file.", Toast.LENGTH_LONG).show()
-            return@rememberLauncherForActivityResult
-        }
-
-        scope.launch {
-            installInProgress = true
-            installProgress = 0 to "Copying selected file..."
-            try {
-                val ext = if (fileName.lowercase().endsWith(".gz") || fileName.lowercase().endsWith(".tgz")) ".tar.gz" else ".tar.xz"
-                val cacheFile = File(context.cacheDir, "pending_local_install$ext")
-
-                val success = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    try {
-                        cacheFile.delete()
-                        inputStream.use { input ->
-                            cacheFile.outputStream().use { output ->
-                                input.copyTo(output)
-                            }
-                        }
-                        true
-                    } catch (e: Exception) {
-                        false
-                    }
-                }
-
-                if (success && cacheFile.exists() && cacheFile.length() > 0) {
-                    pendingLocalFile = cacheFile
-                    showSlotPicker = true
-                } else {
-                    Toast.makeText(context, "Failed to copy local file or file was empty.", Toast.LENGTH_LONG).show()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(context, "Error copying file: ${e.message}", Toast.LENGTH_LONG).show()
-            } finally {
-                installInProgress = false
-            }
+        if (exists) {
+            pendingLocalUri = uri
+            showSlotPicker = true
+        } else {
+            Toast.makeText(context, "Selected file no longer exists. Please pick a valid archive.", Toast.LENGTH_LONG).show()
         }
     }
 }
@@ -1288,19 +1214,10 @@ LaunchedEffect(bootstrapUri) {
     try {
         // 1. Copy selected file to cache
         withContext(Dispatchers.IO) {
-            if (uri.scheme == "file") {
-                val path = uri.path ?: throw Exception("Invalid local file path")
-                File(path).inputStream().use { input ->
-                    tempArchive.outputStream().use { output ->
-                        input.copyTo(output)
-                    }
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                tempArchive.outputStream().use { output ->
+                    input.copyTo(output)
                 }
-            } else {
-                context.contentResolver.openInputStream(uri)?.use { input ->
-                    tempArchive.outputStream().use { output ->
-                        input.copyTo(output)
-                    }
-                } ?: throw Exception("Could not open stream from selected document")
             }
         }
 
@@ -1763,12 +1680,12 @@ if (showTurnipDriverDialog) {
     // ── Slot picker dialog ───────────────────────────────────────
   if (showSlotPicker) {
     val distro = pendingDistro
-    val localFile = pendingLocalFile
+    val localUri = pendingLocalUri
     AlertDialog(
         onDismissRequest = {
             showSlotPicker = false
             pendingDistro = null
-            pendingLocalFile = null
+            pendingLocalUri = null
             confirmOverwriteContinuation?.cancel()
             confirmOverwriteContinuation = null
         },
@@ -1794,9 +1711,9 @@ if (showTurnipDriverDialog) {
 
                                 // Empty slot – install directly
                                 if (distro != null) installIntoSlot(distro, id)
-                                else if (localFile != null) extractLocalIntoSlot(localFile, id)
+                                else if (localUri != null) extractLocalIntoSlot(localUri, id)
                                 pendingDistro = null
-                                pendingLocalFile = null
+                                pendingLocalUri = null
                             
                         },
                         modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
@@ -1830,7 +1747,7 @@ if (showTurnipDriverDialog) {
             TextButton(onClick = {
                 showSlotPicker = false
                 pendingDistro = null
-                pendingLocalFile = null
+                pendingLocalUri = null
             }) { Text("Cancel", color = Color.White.copy(alpha = 0.6f)) }
         }
     )
@@ -2457,10 +2374,11 @@ if (showDistroSelection) {
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(
                                                 text = distro.distroName.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() },
-                                                fontWeight = FontWeight.Bold,
+                                                fontWeight = FontWeight.Black,
                                                 color = Color.White,
                                                 style = MaterialTheme.typography.titleMedium.copy(
-                                                    fontSize = 19.sp
+                                                    fontSize = 25.sp,
+                                                    letterSpacing = (-0.5).sp
                                                 )
                                             )
                                             Spacer(modifier = Modifier.height(2.dp))
