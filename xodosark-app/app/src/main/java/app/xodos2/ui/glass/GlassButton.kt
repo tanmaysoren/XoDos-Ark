@@ -66,7 +66,6 @@ fun GlassButton(
                 scaleY = scale
             }
             .clip(buttonShape)
-            .then(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Modifier.blur(4.dp) else Modifier)
             .background(bgGradient)
             .border(
                 width = 1.dp,
