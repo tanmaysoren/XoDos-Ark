@@ -35,6 +35,16 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import app.xodos2.ui.glassDialogStyle
 import androidx.compose.ui.graphics.Color as ComposeColor
@@ -182,7 +192,7 @@ fun ShellScreen(
                 }
             },
             confirmButton = {
-                TextButton(
+                GlassButton(
                     onClick = {
                         try {
                             JSONArray(editingJson) 
@@ -192,28 +202,25 @@ fun ShellScreen(
                         } catch (e: Exception) {
                             errorText = "Invalid JSON format: ${e.localizedMessage}"
                         }
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = ComposeColor(0xFFC3B6F9))
+                    }
                 ) { 
-                    Text("Save", fontWeight = FontWeight.Bold) 
+                    Text("Save", fontWeight = FontWeight.Bold, color = ComposeColor(0xFFC3B6F9)) 
                 }
             },
             dismissButton = {
-                Row {
-                    TextButton(
+                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    GlassButton(
                         onClick = {
                             editingJson = DEFAULT_EXTRA_KEYS_JSON
-                        },
-                        colors = ButtonDefaults.textButtonColors(contentColor = ComposeColor(0xFFC3B6F9))
+                        }
                     ) { 
-                        Text("Reset") 
+                        Text("Reset", color = ComposeColor(0xFFC3B6F9)) 
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    TextButton(
-                        onClick = { showExtraKeysEditor = false },
-                        colors = ButtonDefaults.textButtonColors(contentColor = ComposeColor.White.copy(alpha = 0.7f))
+                    GlassButton(
+                        onClick = { showExtraKeysEditor = false }
                     ) { 
-                        Text("Close") 
+                        Text("Close", color = ComposeColor.White.copy(alpha = 0.8f)) 
                     }
                 }
             }
@@ -806,5 +813,45 @@ private class ShellSessionController(
             PtyOutputRelay.discardSessionQueue(id)
         }
         attachedId = -1
+    }
+}
+
+@Composable
+private fun GlassButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable RowScope.() -> Unit
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(50))
+            .background(
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        ComposeColor.White.copy(alpha = 0.16f),
+                        ComposeColor.White.copy(alpha = 0.03f)
+                    )
+                )
+            )
+            .border(
+                width = 1.2.dp,
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        ComposeColor.White.copy(alpha = 0.50f),
+                        ComposeColor.White.copy(alpha = 0.08f)
+                    )
+                ),
+                shape = RoundedCornerShape(50)
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 22.dp, vertical = 10.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            content()
+        }
     }
 }
