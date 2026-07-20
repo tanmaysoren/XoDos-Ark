@@ -1,5 +1,6 @@
 package app.xodos2.ui
 
+import app.xodos2.ui.glass.GlassButton
 import android.Manifest
 import android.content.ActivityNotFoundException
 import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
@@ -1514,7 +1515,7 @@ if (bootstrapError != null) {
         title = { Text("Extra drivers installation", fontWeight = FontWeight.Bold, color = Color.White) },
         text = { Text(bootstrapError ?: "", color = Color.White.copy(alpha = 0.85f)) },
         confirmButton = {
-            TextButton(onClick = { bootstrapError = null }) { Text("OK", color = Color(0xFFC3B6F9), fontWeight = FontWeight.Bold) }
+            GlassButton(onClick = { bootstrapError = null }) { Text("OK", color = Color(0xFFC3B6F9), fontWeight = FontWeight.Bold) }
         }
     )
 }
@@ -1550,7 +1551,7 @@ if (bootstrapDownloadInProgress) {
             }
         },
         confirmButton = {
-            TextButton(onClick = { bootstrapDownloadInProgress = false }) {
+            GlassButton(onClick = { bootstrapDownloadInProgress = false }) {
                 Text("Cancel", color = Color(0xFFFF6B6B), fontWeight = FontWeight.Bold)
             }
         }
@@ -1571,7 +1572,7 @@ if (installDone) {
             title = { Text("Setup complete", fontWeight = FontWeight.Bold, color = Color.White) },
             text = { Text("Restart the app to apply the new container.\n\nPlease press Restart.", color = Color.White.copy(alpha = 0.85f)) },
             confirmButton = {
-                TextButton(onClick = {
+                GlassButton(onClick = {
                     val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)?.apply {
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                     }
@@ -1642,14 +1643,14 @@ if (showTurnipDriverDialog) {
         confirmButton = {
             if (isDownloading) {
                 // Show "Cancel download" button
-                TextButton(onClick = {
+                GlassButton(onClick = {
                     // You can implement cancellation logic here if needed
                     // For now, just allow closing only after completion
                 }) {
                     Text("Downloading…", color = Color.White.copy(alpha = 0.5f))
                 }
             } else {
-                TextButton(onClick = {
+                GlassButton(onClick = {
                     // Start download, do not close dialog
                     turnipDownloadInProgress = true
                     scope.launch {
@@ -1665,7 +1666,7 @@ if (showTurnipDriverDialog) {
         },
         dismissButton = {
             if (!isDownloading) {
-                TextButton(onClick = {
+                GlassButton(onClick = {
                     showTurnipDriverDialog = false
                 }) {
                     Text("Cancel", color = Color(0xFFFF6B6B), fontWeight = FontWeight.Bold)
@@ -1744,11 +1745,11 @@ if (showTurnipDriverDialog) {
             }
         },
         confirmButton = {
-            TextButton(onClick = {
+            GlassButton(onClick = {
                 showSlotPicker = false
                 pendingDistro = null
                 pendingLocalUri = null
-            }) { Text("Cancel", color = Color.White.copy(alpha = 0.6f)) }
+            }) { Text("Cancel", color = Color.White.copy(alpha = 0.8f)) }
         }
     )
 }
@@ -1767,18 +1768,18 @@ if (pendingOverwriteSlot != null) {
         title = { Text("Overwrite container $slot?", fontWeight = FontWeight.Bold, color = Color.White) },
         text = { Text("This container already has a rootfs installed. All its files will be deleted and replaced. Make sure to backup if needed.", color = Color.White.copy(alpha = 0.85f)) },
         confirmButton = {
-            TextButton(onClick = {
+            GlassButton(onClick = {
                 pendingOverwriteSlot = null
                 confirmOverwriteContinuation?.resumeWith(Result.success(true))
                 confirmOverwriteContinuation = null
             }) { Text("Overwrite", color = Color(0xFFFF6B6B), fontWeight = FontWeight.Bold) }
         },
         dismissButton = {
-            TextButton(onClick = {
+            GlassButton(onClick = {
                 pendingOverwriteSlot = null
                 confirmOverwriteContinuation?.resumeWith(Result.success(false))
                 confirmOverwriteContinuation = null
-            }) { Text("Cancel", color = Color.White.copy(alpha = 0.6f)) }
+            }) { Text("Cancel", color = Color.White.copy(alpha = 0.8f)) }
         }
     )
 }
@@ -1906,7 +1907,7 @@ if (showContainerManager) {
 
 
                 // Clean cache button
-                TextButton(onClick = {
+                GlassButton(onClick = {
                     showCleanCacheConfirmation = true
                 }) {
                     Text("Clean cache tarballs (*.tar.xz)", color = Color(0xFFC3B6F9))
@@ -1914,7 +1915,7 @@ if (showContainerManager) {
             }
         },
         confirmButton = {
-            TextButton(onClick = { showContainerManager = false }) { Text("Close", color = Color.White) }
+            GlassButton(onClick = { showContainerManager = false }) { Text("Close", color = Color.White) }
         }
     )
 }
@@ -1931,7 +1932,7 @@ if (showDeleteConfirmation != null) {
             Text("This will permanently remove the installed distro and all its files from container $containerId. This action cannot be undone.\n\nAre you sure?", color = Color.White.copy(alpha = 0.85f))
         },
         confirmButton = {
-            TextButton(onClick = {
+            GlassButton(onClick = {
                 scope.launch {
                     if (NativeInstallCoordinator.deleteContainerContents(context, containerId)) {
                         refreshContainerState()
@@ -1944,8 +1945,8 @@ if (showDeleteConfirmation != null) {
             }
         },
         dismissButton = {
-            TextButton(onClick = { showDeleteConfirmation = null }) {
-                Text("Cancel", color = Color.White.copy(alpha = 0.6f))
+            GlassButton(onClick = { showDeleteConfirmation = null }) {
+                Text("Cancel", color = Color.White.copy(alpha = 0.8f))
             }
         }
     )
@@ -1966,7 +1967,7 @@ if (showNativeContainerPrompt != null) {
             Text("Container $containerId can be set up as a native Android terminal (using the Extra drivers packages).\n\nThis will mark the container as installed without downloading a distribution.\n\nDo you want to continue?", color = Color.White.copy(alpha = 0.85f))
         },
         confirmButton = {
-            TextButton(onClick = {
+            GlassButton(onClick = {
                 markContainerAsNativeTerminal(containerId)
                 showNativeContainerPrompt = null
                 Toast.makeText(context, "Container $containerId set as native terminal", Toast.LENGTH_SHORT).show()
@@ -1975,11 +1976,11 @@ if (showNativeContainerPrompt != null) {
             }
         },
         dismissButton = {
-            TextButton(onClick = {
+            GlassButton(onClick = {
                 showNativeContainerPrompt = null
                 proceedToDistroSelection(containerId)
             }) {
-                Text("No, install a distro", color = Color.White.copy(alpha = 0.6f))
+                Text("No, install a distro", color = Color.White.copy(alpha = 0.8f))
             }
         }
     )
@@ -1995,7 +1996,7 @@ if (showCleanCacheConfirmation) {
             Text("All distribution tarballs (*.tar.xz) stored in the app’s cache will be deleted. If you want to install a distro again later, you’ll have to re‑download it.\n\nDo you want to continue?", color = Color.White.copy(alpha = 0.85f))
         },
         confirmButton = {
-            TextButton(onClick = {
+            GlassButton(onClick = {
                 scope.launch {
                     NativeInstallCoordinator.cleanCacheTarballs(context)
                 }
@@ -2005,8 +2006,8 @@ if (showCleanCacheConfirmation) {
             }
         },
         dismissButton = {
-            TextButton(onClick = { showCleanCacheConfirmation = false }) {
-                Text("Cancel", color = Color.White.copy(alpha = 0.6f))
+            GlassButton(onClick = { showCleanCacheConfirmation = false }) {
+                Text("Cancel", color = Color.White.copy(alpha = 0.8f))
             }
         }
     )
@@ -2021,7 +2022,7 @@ if (showExitDialog) {
         title = { Text("Exit", fontWeight = FontWeight.Bold, color = Color.White) },
         text = { Text("Are you sure you want to exit?", color = Color.White.copy(alpha = 0.85f)) },
         confirmButton = {
-            TextButton(onClick = {
+            GlassButton(onClick = {
                 showExitDialog = false
                 // 1. Stop the X11 server service
                 val x11Intent = Intent(context, X11ServerService::class.java)
@@ -2034,7 +2035,7 @@ if (showExitDialog) {
             }) { Text("Yes", color = Color(0xFFFF6B6B), fontWeight = FontWeight.Bold) }
         },
         dismissButton = {
-            TextButton(onClick = { showExitDialog = false }) { Text("No", color = Color.White.copy(alpha = 0.6f)) }
+            GlassButton(onClick = { showExitDialog = false }) { Text("No", color = Color.White.copy(alpha = 0.8f)) }
         }
     )
 }
@@ -2274,11 +2275,11 @@ if (showDistroSelection) {
                                 textAlign = TextAlign.Center
                             )
                             Spacer(modifier = Modifier.height(12.dp))
-                            TextButton(onClick = {
+                            GlassButton(onClick = {
                                 NativeInstallCoordinator.invalidateDistroCache() 
                                 loadDistros(selectedSource)
                             }) {
-                                Text("Retry Connection", color = Color(0xFF7C3AED), fontWeight = FontWeight.Bold)
+                                Text("Retry Connection", color = Color(0xFFC3B6F9), fontWeight = FontWeight.Bold)
                             }
                         }
                     }
