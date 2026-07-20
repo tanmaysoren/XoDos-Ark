@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.xodos2.ui.glassDialogStyle
 import app.xodos2.ui.prefs.AppPrefs
+import app.xodos2.ui.glass.GlassButton
 import org.json.JSONObject
 
 //private data class SavedCommand(val title: String, val command: String)
@@ -85,18 +86,17 @@ fun CommandsSection(
             title = { Text("Saved Commands", fontWeight = FontWeight.Bold, color = Color.White) },
             text = {
                 Column {
-                    TextButton(
+                    GlassButton(
                         onClick = {
                             editingIndex = null
                             editTitle = ""
                             editText = ""
                             showAddEditDialog = true
-                        },
-                        colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFC3B6F9))
+                        }
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color(0xFFC3B6F9))
                         Spacer(Modifier.width(4.dp))
-                        Text("Add command")
+                        Text("Add command", color = Color(0xFFC3B6F9))
                     }
                     Spacer(Modifier.height(8.dp))
                     if (savedCommands.isEmpty()) {
@@ -149,7 +149,7 @@ fun CommandsSection(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showCommandsDialog = false }) {
+                GlassButton(onClick = { showCommandsDialog = false }) {
                     Text("Close", color = Color(0xFFC3B6F9), fontWeight = FontWeight.Bold)
                 }
             }
@@ -198,7 +198,7 @@ fun CommandsSection(
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
+                GlassButton(onClick = {
                     val title = editTitle.trim()
                     val command = editText.trim()
                     if (command.isNotEmpty()) {
@@ -213,7 +213,7 @@ fun CommandsSection(
                 }) { Text("Save", color = Color(0xFFC3B6F9), fontWeight = FontWeight.Bold) }
             },
             dismissButton = {
-                TextButton(onClick = { showAddEditDialog = false }) { Text("Cancel", color = Color.White.copy(alpha = 0.6f)) }
+                GlassButton(onClick = { showAddEditDialog = false }) { Text("Cancel", color = Color.White.copy(alpha = 0.8f)) }
             }
         )
     }
@@ -227,14 +227,14 @@ fun CommandsSection(
             title = { Text("Delete command?", fontWeight = FontWeight.Bold, color = Color.White) },
             text = { Text("Remove \"${savedCommands[idx].title.ifBlank { savedCommands[idx].command }}\"?", color = Color.White.copy(alpha = 0.85f)) },
             confirmButton = {
-                TextButton(onClick = {
+                GlassButton(onClick = {
                     savedCommands.removeAt(idx)
                     persistCommands()
                     showDeleteConfirm = null
                 }) { Text("Delete", color = Color(0xFFFF6B6B), fontWeight = FontWeight.Bold) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = null }) { Text("Cancel", color = Color.White.copy(alpha = 0.6f)) }
+                GlassButton(onClick = { showDeleteConfirm = null }) { Text("Cancel", color = Color.White.copy(alpha = 0.8f)) }
             }
         )
     }
