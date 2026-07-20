@@ -27,10 +27,10 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.AlertDialog
+import app.xodos2.ui.glass.GlassButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.foundation.layout.Spacer
@@ -131,17 +131,17 @@ fun ShellScreen(
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
+                GlassButton(onClick = {
                     showCloseSessionDialog = false
                     if (terminalSessionIds.size <= 1) {
                         onExitRequested()
                     } else {
                         onCloseCurrentSession()
                     }
-                }) { Text(if (terminalSessionIds.size <= 1) "Exit" else "Close") }
+                }) { Text(if (terminalSessionIds.size <= 1) "Exit" else "Close", color = ComposeColor(0xFFC3B6F9), fontWeight = FontWeight.Bold) }
             },
             dismissButton = {
-                TextButton(onClick = { showCloseSessionDialog = false }) { Text("Cancel") }
+                GlassButton(onClick = { showCloseSessionDialog = false }) { Text("Cancel", color = ComposeColor.White.copy(alpha = 0.8f)) }
             }
         )
     }
@@ -813,45 +813,5 @@ private class ShellSessionController(
             PtyOutputRelay.discardSessionQueue(id)
         }
         attachedId = -1
-    }
-}
-
-@Composable
-private fun GlassButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    content: @Composable RowScope.() -> Unit
-) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(50))
-            .background(
-                brush = Brush.linearGradient(
-                    colors = listOf(
-                        ComposeColor.White.copy(alpha = 0.16f),
-                        ComposeColor.White.copy(alpha = 0.03f)
-                    )
-                )
-            )
-            .border(
-                width = 1.2.dp,
-                brush = Brush.linearGradient(
-                    colors = listOf(
-                        ComposeColor.White.copy(alpha = 0.50f),
-                        ComposeColor.White.copy(alpha = 0.08f)
-                    )
-                ),
-                shape = RoundedCornerShape(50)
-            )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 22.dp, vertical = 10.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            content()
-        }
     }
 }
