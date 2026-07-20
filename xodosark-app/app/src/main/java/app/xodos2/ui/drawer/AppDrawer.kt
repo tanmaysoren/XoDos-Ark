@@ -23,94 +23,74 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.ui.draw.blur
-import app.xodos2.ui.glass.glassBlurModifier
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 
 @Composable
 fun AppDrawer(
     drawerState: DrawerState,
     modifier: Modifier = Modifier,
     drawerWidth: Dp = 320.dp,
-    drawerShape: Shape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp),
+    drawerShape: Shape = RoundedCornerShape(topStart = 24.dp, bottomStart = 24.dp),
     drawerBackgroundColor: Color = Color(0xFA0E0A1A),
     isBackgroundBlurred: Boolean = false,
     drawerContent: @Composable () -> Unit,
     content: @Composable () -> Unit,
 ) {
-    val animatedSheetBlur by androidx.compose.animation.core.animateDpAsState(
-        targetValue = if (isBackgroundBlurred) 14.dp else 0.dp,
-        animationSpec = androidx.compose.animation.core.spring(
-            stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
-        ),
-        label = "drawerSheetBlur"
-    )
-
-    ModalNavigationDrawer(
-        modifier = modifier,
-        drawerState = drawerState,
-        // Disable edge-swipe to open, but keep swipe-to-dismiss once open.
-        gesturesEnabled = drawerState.isOpen,
-        scrimColor = Color(0x4007040E), // customized elegant transparent dark-violet tinted scrim
-        drawerContent = {
-            Surface(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .width(drawerWidth)
-                    .padding(end = 8.dp, top = 8.dp, bottom = 8.dp),
-                shape = drawerShape,
-                color = Color.Transparent,
-                tonalElevation = 0.dp,
-                shadowElevation = 16.dp,
-            ) {
-                val baseSheetModifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0xC20E0A24), // gorgeous deep translucent violet-slate
-                                Color(0xDC0B0F1E)  // slightly denser deep black-slate
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+        ModalNavigationDrawer(
+            modifier = modifier,
+            drawerState = drawerState,
+            // Disable edge-swipe to open, but keep swipe-to-dismiss once open.
+            gesturesEnabled = drawerState.isOpen,
+            scrimColor = Color(0x4007040E), // customized elegant transparent dark-violet tinted scrim
+            drawerContent = {
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .width(drawerWidth)
+                            .padding(start = 8.dp, top = 8.dp, bottom = 8.dp),
+                        shape = drawerShape,
+                        color = Color.Transparent,
+                        tonalElevation = 0.dp,
+                        shadowElevation = 16.dp,
+                    ) {
+                        val baseSheetModifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                brush = Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color(0xC20E0A24), // gorgeous deep translucent violet-slate
+                                        Color(0xDC0B0F1E)  // slightly denser deep black-slate
+                                    )
+                                ),
+                                shape = drawerShape
                             )
-                        ),
-                        shape = drawerShape
-                    )
-                    .border(
-                        width = 1.dp,
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                Color.White.copy(alpha = 0.18f),
-                                Color.White.copy(alpha = 0.04f)
+                            .border(
+                                width = 1.dp,
+                                brush = Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.White.copy(alpha = 0.18f),
+                                        Color.White.copy(alpha = 0.04f)
+                                    )
+                                ),
+                                shape = drawerShape
                             )
-                        ),
-                        shape = drawerShape
-                    )
-                val sheetModifier = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && animatedSheetBlur > 0.dp) {
-                    baseSheetModifier.blur(animatedSheetBlur)
-                } else {
-                    baseSheetModifier
+                        Box(modifier = baseSheetModifier) {
+                            drawerContent()
+                        }
+                    }
                 }
-                Box(modifier = sheetModifier) {
-                    drawerContent()
+            },
+        ) {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopStart) {
+                    content()
                 }
             }
-        },
-    ) {
-        val isOpeningOrOpen = drawerState.targetValue == DrawerValue.Open
-        val animatedBlur by androidx.compose.animation.core.animateDpAsState(
-            targetValue = if (isOpeningOrOpen || isBackgroundBlurred) 14.dp else 0.dp,
-            animationSpec = androidx.compose.animation.core.spring(
-                stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
-            ),
-            label = "drawerBlur"
-        )
-        val contentModifier = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && animatedBlur > 0.dp) {
-            Modifier
-                .fillMaxSize()
-                .blur(animatedBlur)
-        } else {
-            Modifier.fillMaxSize()
-        }
-        Box(modifier = contentModifier, contentAlignment = Alignment.TopStart) {
-            content()
         }
     }
 }
+
