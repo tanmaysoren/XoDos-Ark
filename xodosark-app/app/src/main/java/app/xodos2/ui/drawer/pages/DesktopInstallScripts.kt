@@ -20,7 +20,7 @@ object DesktopInstallScripts {
                 Pair(
                     "apt-get update -y && apt-get upgrade -y \n" +
                     "apt-get install -y --option Dpkg::Options::=\"--force-overwrite\"",
-                    "mesa-utils xwayland libvulkan-dev mesa-vulkan-drivers libgl1-mesa-dri libglx-mesa0 libegl-mesa0 vulkan-tools dbus-x11 zip unzip"
+                    "mesa-utils xwayland libvulkan-dev mesa-vulkan-drivers libgl1-mesa-dri libglx-mesa0 libegl-mesa0 vulkan-tools dbus-x11"
                 )
             cleanDistro.contains("arch") || cleanDistro.contains("manjaro") || cleanDistro.contains("artix") ->
                 Pair(
@@ -32,7 +32,7 @@ object DesktopInstallScripts {
                 Pair(
                     "dnf upgrade -y \n" +
                     "dnf install -y --allowerasing --skip-broken",
-                    "glx-utils xorg-x11-server-Xwayland vulkan-loader-devel mesa-dri-drivers vulkan-tools dbus-x11 zip unzip"
+                    "glx-utils xorg-x11-server-Xwayland vulkan-loader-devel mesa-dri-drivers vulkan-tools dbus-x11"
                 )
             cleanDistro.contains("alpine") ->
                 Pair(
@@ -50,13 +50,13 @@ object DesktopInstallScripts {
                 Pair(
                     "zypper --non-interactive refresh \n" +
                     "zypper --non-interactive install ",
-                    "mesa-utils xorg-x11-server-Xwayland vulkan-devel mesa-dri-drivers vulkan-tools dbus-1-x11 zip unzip"
+                    "mesa-utils xorg-x11-server-Xwayland vulkan-devel mesa-dri-drivers vulkan-tools dbus-1-x11"
                 )
             else ->
                 Pair(
                     "apt-get update -y && apt-get upgrade -y --allow-downgrades --allow-remove-essential || true\n" +
                     "apt-get install -y --option Dpkg::Options::=\"--force-overwrite\"",
-                    "mesa-utils xwayland libvulkan-dev mesa-vulkan-drivers libgl1-mesa-dri libglx-mesa0 libegl-mesa0 vulkan-tools dbus-x11 zip unzip pulseaudio"
+                    "mesa-utils xwayland libvulkan-dev mesa-vulkan-drivers libgl1-mesa-dri libglx-mesa0 libegl-mesa0 vulkan-tools dbus-x11 pulseaudio"
                 )
         }
 
@@ -152,14 +152,14 @@ echo "Kali base environment aligned."
             "XFCE Desktop" -> when {
                 cleanDistro.contains("arch") || cleanDistro.contains("manjaro") -> "xfce4 xfce4-goodies"
                 cleanDistro.contains("alpine") -> "xfce4"
-                cleanDistro.contains("manjaro") -> "xfce4* lxqt-themes featherpad"
-                cleanDistro.contains("kali") || cleanDistro.contains("debian") || cleanDistro.contains("ubuntu") -> "xfce4*"
+                cleanDistro.contains("manjaro") -> "xfce4 xfce4-goodies featherpad"
+                cleanDistro.contains("kali") || cleanDistro.contains("debian") || cleanDistro.contains("ubuntu") -> "xfce4 xfce4-goodies"
                 cleanDistro.contains("fedora") -> "@xfce-desktop-environment qt5-qtbase-gui qt6-qtbase-gui"
                 else -> "xfce4"
             }
             "LXQt Desktop" -> when {
                 cleanDistro.contains("arch") || cleanDistro.contains("manjaro") -> "lxqt lxqt-themes featherpad"
-                cleanDistro.contains("debian") || cleanDistro.contains("ubuntu") -> "lxqt* openbox"
+                cleanDistro.contains("debian") || cleanDistro.contains("ubuntu") -> "lxqt openbox"
                 cleanDistro.contains("fedora") -> "@lxqt-desktop-environment qt5-qtbase-gui qt6-qtbase-gui"
                 else -> "lxqt"
             }
@@ -173,7 +173,7 @@ echo "Kali base environment aligned."
                 cleanDistro.contains("arch") || cleanDistro.contains("manjaro") -> "gnome gnome-tweaks"
                 cleanDistro.contains("debian") || cleanDistro.contains("ubuntu") -> "gnome-core"
                 cleanDistro.contains("fedora") -> "@gnome-desktop"
-                else -> "gnome*"
+                else -> "gnome"
             }
             "MATE" -> when {
                 cleanDistro.contains("arch") || cleanDistro.contains("manjaro") -> "mate mate-extra"
