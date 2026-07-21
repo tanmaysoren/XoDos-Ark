@@ -93,11 +93,6 @@ import java.io.InputStreamReader
 
 import android.view.WindowManager
 
-import androidx.compose.foundation.border
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.clip          // optional, but may be needed
-import androidx.compose.ui.graphics.Brush
-
 fun Modifier.glassDialogStyle(): Modifier = this
     .background(
         brush = Brush.verticalGradient(
@@ -2622,8 +2617,8 @@ if (showDistroSelection) {
             },
             vulkanOptions = VULKAN_MODES,
             openGLOptions = when (desktopVulkanMode) {
-             "TURNIP" -> listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
-             "VENUS"  -> listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
+                "TURNIP" -> listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
+                "VENUS"  -> listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
                 else     -> OPENGL_MODES
             },
             hasDebianRootfs = hasContainer2,
@@ -2682,8 +2677,8 @@ if (showDistroSelection) {
             },
             vulkanOptions = VULKAN_MODES,
             openGLOptions = when (desktopVulkanMode) {
-              "TURNIP" -> listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
-              "VENUS"  -> listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
+                "TURNIP" -> listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
+                "VENUS"  -> listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
                 else     -> OPENGL_MODES
             },
             hasWineRootfs = hasContainer3,
