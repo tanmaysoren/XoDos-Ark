@@ -181,6 +181,7 @@ echo "Kali base environment aligned."
             }
             "Cinnamon" -> when {
                 cleanDistro.contains("arch") || cleanDistro.contains("manjaro") -> "cinnamon nemo"
+                cleanDistro.contains("fedora") -> "@cinnamon-desktop-environment qt5-qtbase-gui qt6-qtbase-gui"
                 else -> "cinnamon-desktop-environment"
             }
             else -> ""
