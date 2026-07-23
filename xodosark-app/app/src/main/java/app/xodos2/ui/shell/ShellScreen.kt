@@ -583,7 +583,7 @@ private fun rebuildExtraKeys(
             includeFontPadding = false
             isAllCaps = false
             isClickable = !isTransparent
-            isFocusable = !isTransparent
+            isFocusable = false
             
             if (isTransparent) {
                 visibility = android.view.View.INVISIBLE

@@ -51,7 +51,7 @@ class MainActivity : ComponentActivity() {
             !InputRouteState.lorieX11DisplayVisible &&
             HardwareKeyEventPolicy.isLikelyFromHardwareKeyboard(event)) {
             val tv = InputRouteState.shellTerminalView
-            if (tv != null) {
+            if (tv != null && !tv.hasFocus()) {
                 tv.requestFocus()
                 if (tv.dispatchKeyEvent(event)) return true
             }
@@ -65,7 +65,7 @@ class MainActivity : ComponentActivity() {
             !InputRouteState.lorieX11DisplayVisible &&
             HardwareKeyEventPolicy.isLikelyFromHardwareKeyboard(event)) {
             val tv = InputRouteState.shellTerminalView
-            if (tv != null) {
+            if (tv != null && !tv.hasFocus()) {
                 tv.requestFocus()
                 if (tv.dispatchKeyEvent(event)) return true
             }
@@ -79,7 +79,7 @@ class MainActivity : ComponentActivity() {
             !InputRouteState.lorieX11DisplayVisible &&
             HardwareKeyEventPolicy.isLikelyFromHardwareKeyboard(event)) {
             val tv = InputRouteState.shellTerminalView
-            if (tv != null) {
+            if (tv != null && !tv.hasFocus()) {
                 tv.requestFocus()
                 if (tv.dispatchKeyShortcutEvent(event)) return true
             }
