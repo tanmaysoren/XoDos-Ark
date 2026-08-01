@@ -1357,7 +1357,7 @@ fun checkAndPromptTurnipDrivers() {
 }
     
     fun injectGraphicsEnvToAllTerminals() {
-    val envContent = DisplayOrchestrator.buildSystemGraphicsEnv(prefs)
+    val envContent = DisplayOrchestrator.buildSystemGraphicsEnv(prefs, context)
     // Keep only non‑blank lines; they already include "export"/"unset"
     val snippet = envContent.lines()
         .filter { it.isNotBlank() }
