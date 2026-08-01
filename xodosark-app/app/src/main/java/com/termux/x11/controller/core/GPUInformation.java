@@ -80,6 +80,7 @@ public abstract class GPUInformation {
     }
 
     public static String getRenderer(Context context) {
+        if (context == null) return "";
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         String value = preferences.getString("gpu_renderer", "");
         if (!value.isEmpty()) return value;
@@ -89,6 +90,7 @@ public abstract class GPUInformation {
     }
 
     public static String getVendor(Context context) {
+        if (context == null) return "";
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         String value = preferences.getString("gpu_vendor", "");
         if (!value.isEmpty()) return value;
@@ -98,6 +100,7 @@ public abstract class GPUInformation {
     }
 
     public static String getVersion(Context context) {
+        if (context == null) return "";
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         String value = preferences.getString("gpu_version", "");
         if (!value.isEmpty()) return value;
@@ -108,5 +111,34 @@ public abstract class GPUInformation {
 
     public static boolean isAdreno6xx(Context context) {
         return getRenderer(context).toLowerCase(Locale.ENGLISH).matches(".*adreno[^6]+6[0-9]{2}.*");
+    }
+
+    public static boolean isMali(Context context) {
+        String vendor = getVendor(context).toLowerCase(Locale.ENGLISH);
+        String renderer = getRenderer(context).toLowerCase(Locale.ENGLISH);
+        if (vendor.contains("mali") || renderer.contains("mali") ||
+            vendor.contains("arm") || renderer.contains("bifrost") ||
+            renderer.contains("valhall") || renderer.contains("immortalis")) {
+            return true;
+        }
+        return isMediaTek(context);
+    }
+
+    public static boolean isMediaTek(Context context) {
+        String vendor = getVendor(context).toLowerCase(Locale.ENGLISH);
+        String renderer = getRenderer(context).toLowerCase(Locale.ENGLISH);
+        if (vendor.contains("mediatek") || renderer.contains("mediatek") ||
+            vendor.contains("mtk") || renderer.contains("mtk")) {
+            return true;
+        }
+        try {
+            String hardware = android.os.Build.HARDWARE.toLowerCase(Locale.ENGLISH);
+            String board = android.os.Build.BOARD.toLowerCase(Locale.ENGLISH);
+            if (hardware.contains("mt") || hardware.contains("mediatek") ||
+                board.contains("mt") || board.contains("mediatek")) {
+                return true;
+            }
+        } catch (Throwable ignored) {}
+        return false;
     }
 }
