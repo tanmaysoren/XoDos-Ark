@@ -288,9 +288,8 @@ val payload = buildString {
                 b.append("export TU_DEBUG=noconform\n")
             }
             else -> {
-                b.append("unset MESA_GL_VERSION_OVERRIDE LIBGL_FB VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VK_DRIVER_FILES VN_DEBUG || true\n")           
-                b.append("export GALLIUM_DRIVER=llvmpipe\n")
-                b.append("unset VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VK_DRIVER_FILES VN_DEBUG || true\n")
+                b.append("unset VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE VK_DRIVER_FILES VN_DEBUG || true\n")
+                b.append("export VK_ICD_FILENAMES=/dev/null\n")
             }
         }
         return b.toString()
