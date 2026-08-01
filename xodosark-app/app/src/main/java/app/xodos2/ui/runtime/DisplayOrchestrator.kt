@@ -66,6 +66,7 @@ object DisplayOrchestrator {
         hasWineRootfs: Boolean,
     ) {
         if (!hasWineRootfs) return
+        updateContainersSystemEnvironment(context, prefs)
         if (!NativeBridge.isSessionAlive(TerminalSessionIds.WINE_X11_DISPLAY)) {
             if (!NativeBridge.spawnSessionInRootfs(
                     TerminalSessionIds.WINE_X11_DISPLAY,
@@ -129,6 +130,7 @@ val payload = buildString {
         hasArchRootfs: Boolean,
     ) {
         if (!hasArchRootfs) return
+        updateContainersSystemEnvironment(context, prefs)
         if (!ensureArchX11DisplaySession()) return
         val targetId = TerminalSessionIds.ARCH_X11_DISPLAY
         val user = AppPrefs.readArchX11DesktopStartupScript(prefs).trim()
@@ -175,6 +177,8 @@ val payload = buildString {
         headlessInjectHandler: Handler,
         hasDebianRootfs: Boolean,
     ) {
+        if (!hasDebianRootfs) return
+        updateContainersSystemEnvironment(context, prefs)
         if (!ensureDebianX11DisplaySession(hasDebianRootfs)) return
         val targetId = TerminalSessionIds.DEBIAN_X11_DISPLAY
         val user = AppPrefs.readDebianDesktopStartupScript(prefs).trim()
@@ -380,8 +384,44 @@ val payload = buildString {
             if (!containerDir.isDirectory) continue
             val etcDir = File(containerDir, "etc")
             etcDir.mkdirs()
+
+            // 1. Write /etc/environment
             val envFile = File(etcDir, "environment")
             envFile.writeText(envContent)
+
+            // 2. Write /etc/profile.d/xodos_graphics.sh
+            val profileDir = File(etcDir, "profile.d")
+            profileDir.mkdirs()
+            val scriptFile = File(profileDir, "xodos_graphics.sh")
+            scriptFile.writeText("#!/bin/sh\n" + envContent)
+            try { scriptFile.setExecutable(true, false) } catch (_: Throwable) {}
+
+            val sourceLine = "[ -f /etc/profile.d/xodos_graphics.sh ] && . /etc/profile.d/xodos_graphics.sh"
+
+            // 3. Ensure /etc/bash.bashrc sources /etc/profile.d/xodos_graphics.sh
+            val bashrcFile = File(etcDir, "bash.bashrc")
+            if (bashrcFile.exists()) {
+                val existing = bashrcFile.readText()
+                if (!existing.contains("xodos_graphics.sh")) {
+                    bashrcFile.appendText("\n" + sourceLine + "\n")
+                }
+            } else {
+                bashrcFile.writeText(sourceLine + "\n")
+            }
+
+            // 4. Ensure /root/.bashrc also sources /etc/profile.d/xodos_graphics.sh
+            val rootDir = File(containerDir, "root")
+            if (rootDir.isDirectory) {
+                val rootBashrc = File(rootDir, ".bashrc")
+                if (rootBashrc.exists()) {
+                    val existing = rootBashrc.readText()
+                    if (!existing.contains("xodos_graphics.sh")) {
+                        rootBashrc.appendText("\n" + sourceLine + "\n")
+                    }
+                } else {
+                    rootBashrc.writeText(sourceLine + "\n")
+                }
+            }
         }
     }
 
