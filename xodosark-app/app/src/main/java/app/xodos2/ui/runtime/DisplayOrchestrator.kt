@@ -8,6 +8,7 @@ import app.xodos2.NativeBridge
 import app.xodos2.TerminalSessionIds
 import app.xodos2.WaylandBridge
 import app.xodos2.ui.prefs.AppPrefs
+import com.termux.x11.controller.core.GPUInformation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -75,7 +76,7 @@ object DisplayOrchestrator {
         }
         val targetId = TerminalSessionIds.WINE_X11_DISPLAY
         val user = (prefs.getString("wine_x11_startup_script", "") ?: "").trim()
-        val graphicsEnv = buildSystemGraphicsEnv(prefs)
+        val graphicsEnv = buildSystemGraphicsEnv(prefs, context)
 val payload = buildString {
     graphicsEnv.lines()
         .filter { it.isNotBlank() }
@@ -131,7 +132,7 @@ val payload = buildString {
         if (!ensureArchX11DisplaySession()) return
         val targetId = TerminalSessionIds.ARCH_X11_DISPLAY
         val user = AppPrefs.readArchX11DesktopStartupScript(prefs).trim()
-        val graphicsEnv = buildSystemGraphicsEnv(prefs)
+        val graphicsEnv = buildSystemGraphicsEnv(prefs, context)
 val payload = buildString {
     graphicsEnv.lines()
         .filter { it.isNotBlank() }
@@ -177,7 +178,7 @@ val payload = buildString {
         if (!ensureDebianX11DisplaySession(hasDebianRootfs)) return
         val targetId = TerminalSessionIds.DEBIAN_X11_DISPLAY
         val user = AppPrefs.readDebianDesktopStartupScript(prefs).trim()
-        val graphicsEnv = buildSystemGraphicsEnv(prefs)
+        val graphicsEnv = buildSystemGraphicsEnv(prefs, context)
 val payload = buildString {
     graphicsEnv.lines()
         .filter { it.isNotBlank() }
@@ -214,7 +215,14 @@ val payload = buildString {
         headlessInjectHandler.post(waiter)
     }
 
-    fun buildWaylandAndGraphicsEnvSnippet(socketName: String, vulkanMode: String, openGLMode: String): String {
+    fun buildWaylandAndGraphicsEnvSnippet(
+        socketName: String,
+        vulkanMode: String,
+        openGLMode: String,
+        context: Context? = null,
+    ): String {
+        val isMtkOrMali = context?.let { GPUInformation.isMali(it) || GPUInformation.isMediaTek(it) }
+            ?: (GPUInformation.isMali(null) || GPUInformation.isMediaTek(null))
         val b = StringBuilder()
         b.append("export WAYLAND_DISPLAY=").append(socketName).append("\n")
         when (openGLMode) {
@@ -225,20 +233,30 @@ val payload = buildString {
                 b.append("export LIBGL_ALWAYS_SOFTWARE=0\n")
                 b.append("export VTEST_SOCKET_NAME=/run/xodos2-virgl/vtest.sock\n")
                 b.append("export VTEST_RENDERER_SOCKET_NAME=/run/xodos2-virgl/vtest.sock\n")
+                if (isMtkOrMali) {
+                    b.append("export VIRGL_NO_10BIT=1\n")
+                    b.append("export MESA_GL_VERSION_OVERRIDE=3.3\n")
+                    b.append("export MESA_GLSL_VERSION_OVERRIDE=330\n")
+                    b.append("export MESA_GLES_VERSION_OVERRIDE=3.2\n")
+                    b.append("export MESA_EXTENSION_OVERRIDE=\"-GL_ARB_gpu_shader5 -GL_ARB_geometry_shader4 -GL_ARB_transform_feedback2\"\n")
+                    b.append("export ANGLE_DEFAULT_INITIALIZATION_PLATFORM=gl\n")
+                    b.append("export ANGLE_FEATURE_OVERRIDES_ENABLED=loseContextOnOutOfMemory\n")
+                }
             }
             "ZINK" -> {
                 b.append("export VKD3D_FEATURE_LEVEL=12_0\n")
                 b.append("export MESA_LOADER_DRIVER_OVERRIDE=zink\n")
-                b.append("export MESA_VK_WSI_PRESENT_MODE=mailbox\n")
-                b.append("export MESA_LOADER_DRIVER_OVERRIDE=zink\n")
+                b.append("export MESA_VK_WSI_PRESENT_MODE=${if (isMtkOrMali) "fifo" else "mailbox"}\n")
                 b.append("export LIBGL_ALWAYS_SOFTWARE=0\n")
+                if (isMtkOrMali) {
+                    b.append("export MESA_GL_VERSION_OVERRIDE=3.3\n")
+                    b.append("export MESA_GLSL_VERSION_OVERRIDE=330\n")
+                }
             }
             "GL4ES" -> {
-            //    b.append("export VKD3D_FEATURE_LEVEL=12_0\n")
                 b.append("export MESA_GL_VERSION_OVERRIDE=2.1 \n")
                 b.append("export LIBGL_FB=3\n")
-                b.append("export MESA_VK_WSI_PRESENT_MODE=mailbox\n")
-              //  b.append("export MESA_LOADER_DRIVER_OVERRIDE=zink\n")
+                b.append("export MESA_VK_WSI_PRESENT_MODE=${if (isMtkOrMali) "fifo" else "mailbox"}\n")
                 b.append("export LIBGL_ALWAYS_SOFTWARE=0\n")
                 b.append("export LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu/gl4es:\$LD_LIBRARY_PATH\n")
             }
@@ -251,18 +269,20 @@ val payload = buildString {
         }
         when (vulkanMode) {
             "VENUS" -> {
-                
                 b.append("export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/virtio_icd.json\n")
                 b.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/virtio_icd.json\n")
                 b.append("export VN_DEBUG=vtest\n")
                 b.append("export VTEST_SOCKET_NAME=/run/xodos2-virgl/venus.sock\n")
                 b.append("export VTEST_RENDERER_SOCKET_NAME=/run/xodos2-virgl/venus.sock\n")
+                if (isMtkOrMali) {
+                    b.append("export MESA_VK_WSI_PRESENT_MODE=fifo\n")
+                    b.append("export VIRGL_NO_10BIT=1\n")
+                    b.append("export MESA_VK_ABORT_ON_ERROR=0\n")
+                }
             }
             "TURNIP" -> {
                 b.append("export VKD3D_FEATURE_LEVEL=12_0\n")
-              //  b.append("export MESA_LOADER_DRIVER_OVERRIDE=zink\n")
-                b.append("export MESA_VK_WSI_PRESENT_MODE=mailbox\n")
-                //b.append("export GALLIUM_DRIVER=zink\n")
+                b.append("export MESA_VK_WSI_PRESENT_MODE=${if (isMtkOrMali) "fifo" else "mailbox"}\n")
                 b.append("export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/freedreno_icd.aarch64.json\n")
                 b.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/freedreno_icd.aarch64.json\n")
                 b.append("export TU_DEBUG=noconform\n")
@@ -276,9 +296,11 @@ val payload = buildString {
         return b.toString()
     }
 
-    fun buildSystemGraphicsEnv(prefs: SharedPreferences): String {
+    fun buildSystemGraphicsEnv(prefs: SharedPreferences, context: Context? = null): String {
         val vulkan = prefs.getString("desktop_vulkan_mode", "LLVMPIPE") ?: "LLVMPIPE"
         val openGL = prefs.getString("desktop_opengl_mode", "LLVMPIPE") ?: "LLVMPIPE"
+        val isMtkOrMali = context?.let { GPUInformation.isMali(it) || GPUInformation.isMediaTek(it) }
+            ?: (GPUInformation.isMali(null) || GPUInformation.isMediaTek(null))
         val sb = StringBuilder()
         sb.append("export DISPLAY=:0\n")
         when (openGL) {
@@ -289,19 +311,31 @@ val payload = buildString {
                 sb.append("export LIBGL_ALWAYS_SOFTWARE=0\n")
                 sb.append("export VTEST_SOCKET_NAME=/run/xodos2-virgl/vtest.sock\n")
                 sb.append("export VTEST_RENDERER_SOCKET_NAME=/run/xodos2-virgl/vtest.sock\n")
+                if (isMtkOrMali) {
+                    sb.append("export VIRGL_NO_10BIT=1\n")
+                    sb.append("export MESA_GL_VERSION_OVERRIDE=3.3\n")
+                    sb.append("export MESA_GLSL_VERSION_OVERRIDE=330\n")
+                    sb.append("export MESA_GLES_VERSION_OVERRIDE=3.2\n")
+                    sb.append("export MESA_EXTENSION_OVERRIDE=\"-GL_ARB_gpu_shader5 -GL_ARB_geometry_shader4 -GL_ARB_transform_feedback2\"\n")
+                    sb.append("export ANGLE_DEFAULT_INITIALIZATION_PLATFORM=gl\n")
+                    sb.append("export ANGLE_FEATURE_OVERRIDES_ENABLED=loseContextOnOutOfMemory\n")
+                }
             }
             "ZINK" -> {
                 sb.append("export VKD3D_FEATURE_LEVEL=12_0\n")
                 sb.append("export MESA_LOADER_DRIVER_OVERRIDE=zink\n")               
                 sb.append("export GALLIUM_DRIVER=zink\n")
-                sb.append("export MESA_LOADER_DRIVER_OVERRIDE=zink\n")
+                sb.append("export MESA_VK_WSI_PRESENT_MODE=${if (isMtkOrMali) "fifo" else "mailbox"}\n")
                 sb.append("export LIBGL_ALWAYS_SOFTWARE=0\n")
+                if (isMtkOrMali) {
+                    sb.append("export MESA_GL_VERSION_OVERRIDE=3.3\n")
+                    sb.append("export MESA_GLSL_VERSION_OVERRIDE=330\n")
+                }
             }
             "GL4ES" -> {
                 sb.append("export MESA_GL_VERSION_OVERRIDE=2.1 \n")
                 sb.append("export LIBGL_FB=3\n")
-              //  sb.append("export GALLIUM_DRIVER=zink\n")
-            //    sb.append("export MESA_LOADER_DRIVER_OVERRIDE=zink\n")
+                sb.append("export MESA_VK_WSI_PRESENT_MODE=${if (isMtkOrMali) "fifo" else "mailbox"}\n")
                 sb.append("export LIBGL_ALWAYS_SOFTWARE=0\n")
                 sb.append("export LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu/gl4es:\$LD_LIBRARY_PATH\n")
             }
@@ -310,27 +344,27 @@ val payload = buildString {
                 sb.append("export GALLIUM_DRIVER=llvmpipe\n")
                 sb.append("export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe\n")
                 sb.append("export LIBGL_ALWAYS_SOFTWARE=1\n")
-                
             }
         }
         when (vulkan) {
             "VENUS" -> {
-                sb.append("export MESA_VK_WSI_PRESENT_MODE=mailbox\n")
+                sb.append("export MESA_VK_WSI_PRESENT_MODE=${if (isMtkOrMali) "fifo" else "mailbox"}\n")
                 sb.append("export TU_DEBUG=noconform\n")
-               // sb.append("export GALLIUM_DRIVER=zink\n")
                 sb.append("export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/virtio_icd.json\n")
                 sb.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/virtio_icd.json\n")
                 sb.append("export VN_DEBUG=vtest\n")
                 sb.append("export VTEST_SOCKET_NAME=/run/xodos2-virgl/venus.sock\n")
                 sb.append("export VTEST_RENDERER_SOCKET_NAME=/run/xodos2-virgl/venus.sock\n")
+                if (isMtkOrMali) {
+                    sb.append("export VIRGL_NO_10BIT=1\n")
+                    sb.append("export MESA_VK_ABORT_ON_ERROR=0\n")
+                }
             }
             "TURNIP" -> {
-                sb.append("export MESA_VK_WSI_PRESENT_MODE=mailbox\n")
+                sb.append("export MESA_VK_WSI_PRESENT_MODE=${if (isMtkOrMali) "fifo" else "mailbox"}\n")
                 sb.append("export TU_DEBUG=noconform\n")             
-              //  sb.append("export GALLIUM_DRIVER=zink\n")
                 sb.append("export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/freedreno_icd.aarch64.json\n")
                 sb.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/freedreno_icd.aarch64.json\n")
-                sb.append("export TU_DEBUG=noconform\n")
             }
             else -> {
                 sb.append("unset VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE VK_DRIVER_FILES VN_DEBUG || true\n")
@@ -341,7 +375,7 @@ val payload = buildString {
     }
 
     fun updateContainersSystemEnvironment(context: Context, prefs: SharedPreferences) {
-        val envContent = buildSystemGraphicsEnv(prefs)
+        val envContent = buildSystemGraphicsEnv(prefs, context)
         for (id in 1..3) {
             val containerDir = NativeInstallCoordinator.containerPath(context, id)
             if (!containerDir.isDirectory) continue
