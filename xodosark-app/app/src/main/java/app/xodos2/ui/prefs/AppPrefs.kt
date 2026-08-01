@@ -134,8 +134,9 @@ object AppPrefs {
      */
     fun buildDebianX11ImplicitEnvSnippet(): String =
         """
+        |[ -f /etc/profile.d/xodos_graphics.sh ] && . /etc/profile.d/xodos_graphics.sh
         |export DISPLAY=:0
-        |source /etc/profile.d/*.sh
+        |source /etc/profile.d/*.sh 2>/dev/null || true
         |#unset WAYLAND_DISPLAY 2>/dev/null || true
         |export XDG_SESSION_TYPE=x11
         |
