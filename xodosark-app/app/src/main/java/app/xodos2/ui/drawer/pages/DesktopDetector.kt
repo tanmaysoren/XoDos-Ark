@@ -51,6 +51,9 @@ object DesktopDetector {
         // Common preamble for most desktops
         val commonSetup = """
         # Common environment
+        if [ -f /etc/profile.d/xodos_graphics.sh ]; then
+            . /etc/profile.d/xodos_graphics.sh
+        fi
         if [ -f /.x11 ]; then
             export GDK_BACKEND='x11'
             export QT_QPA_PLATFORM='xcb'
