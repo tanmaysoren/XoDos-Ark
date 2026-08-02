@@ -3,6 +3,9 @@ package app.xodos2.ui.prefs
 import android.content.SharedPreferences
 
 object AppPrefs {
+    val BUILTIN_VULKAN_MODES = listOf("LLVMPIPE", "TURNIP", "VENUS")
+    val BUILTIN_OPENGL_MODES = listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
+
     private const val PREF_LAUNCHER_DEFAULT = "launcher_default_mode"
     private const val PREF_DEBIAN_DESKTOP_SCRIPT = "debian_desktop_startup_script"
     private const val PREF_LEGACY_CONTAINER_SCRIPT = "container_startup_script"
@@ -127,47 +130,66 @@ object AppPrefs {
         prefs.edit().putString(key, value).apply()
     }
 
-    val BUILTIN_VULKAN_MODES = listOf("LLVMPIPE", "VENUS", "TURNIP")
-    val BUILTIN_OPENGL_MODES = listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
+    data class CustomDriverInfo(
+        val name: String,
+        val type: String, // "Vulkan" or "OpenGL"
+        val filePath: String,
+    )
 
-    fun getCustomVulkanDrivers(prefs: SharedPreferences): List<String> {
-        val set = prefs.getStringSet("custom_vulkan_drivers", emptySet()) ?: emptySet()
-        return set.map { it.trim().uppercase() }.filter { it.isNotBlank() && it !in BUILTIN_VULKAN_MODES }.sorted()
+    fun getCustomDrivers(prefs: SharedPreferences?): List<CustomDriverInfo> {
+        if (prefs == null) return emptyList()
+        val set = prefs.getStringSet("custom_drivers_metadata", emptySet()) ?: emptySet()
+        return set.mapNotNull { entry ->
+            val parts = entry.split("|")
+            if (parts.size >= 3) {
+                CustomDriverInfo(
+                    name = parts[0].trim().uppercase(),
+                    type = parts[1].trim(),
+                    filePath = parts.subList(2, parts.size).joinToString("|")
+                )
+            } else if (parts.size == 2) {
+                CustomDriverInfo(
+                    name = parts[0].trim().uppercase(),
+                    type = parts[1].trim(),
+                    filePath = ""
+                )
+            } else if (parts.isNotEmpty() && parts[0].isNotBlank()) {
+                CustomDriverInfo(
+                    name = parts[0].trim().uppercase(),
+                    type = "Vulkan",
+                    filePath = ""
+                )
+            } else null
+        }.sortedBy { it.name }
     }
 
-    fun addCustomVulkanDriver(prefs: SharedPreferences, driver: String) {
-        val clean = driver.trim().uppercase()
-        if (clean.isBlank() || clean in BUILTIN_VULKAN_MODES) return
-        val current = prefs.getStringSet("custom_vulkan_drivers", emptySet()) ?: emptySet()
-        val updated = current + clean
-        prefs.edit().putStringSet("custom_vulkan_drivers", updated).apply()
+    fun addCustomDriver(prefs: SharedPreferences, info: CustomDriverInfo) {
+        val cleanName = info.name.trim().uppercase()
+        if (cleanName.isBlank()) return
+        val currentList = getCustomDrivers(prefs).filter { it.name != cleanName }
+        val newList = currentList + CustomDriverInfo(cleanName, info.type, info.filePath)
+        val set = newList.map { "${it.name}|${it.type}|${it.filePath}" }.toSet()
+        prefs.edit().putStringSet("custom_drivers_metadata", set).apply()
     }
 
-    fun removeCustomVulkanDriver(prefs: SharedPreferences, driver: String) {
-        val clean = driver.trim().uppercase()
-        val current = prefs.getStringSet("custom_vulkan_drivers", emptySet()) ?: emptySet()
-        val updated = current - clean
-        prefs.edit().putStringSet("custom_vulkan_drivers", updated).apply()
+    fun removeCustomDriver(prefs: SharedPreferences, name: String) {
+        val cleanName = name.trim().uppercase()
+        val currentList = getCustomDrivers(prefs).filter { it.name != cleanName }
+        val set = currentList.map { "${it.name}|${it.type}|${it.filePath}" }.toSet()
+        prefs.edit().putStringSet("custom_drivers_metadata", set).apply()
     }
 
-    fun getCustomOpenGLDrivers(prefs: SharedPreferences): List<String> {
-        val set = prefs.getStringSet("custom_opengl_drivers", emptySet()) ?: emptySet()
-        return set.map { it.trim().uppercase() }.filter { it.isNotBlank() && it !in BUILTIN_OPENGL_MODES }.sorted()
+    fun getCustomVulkanDrivers(prefs: SharedPreferences?): List<String> {
+        return getCustomDrivers(prefs).filter { it.type.equals("Vulkan", ignoreCase = true) }.map { it.name }
     }
 
-    fun addCustomOpenGLDriver(prefs: SharedPreferences, driver: String) {
-        val clean = driver.trim().uppercase()
-        if (clean.isBlank() || clean in BUILTIN_OPENGL_MODES) return
-        val current = prefs.getStringSet("custom_opengl_drivers", emptySet()) ?: emptySet()
-        val updated = current + clean
-        prefs.edit().putStringSet("custom_opengl_drivers", updated).apply()
+    fun getCustomOpenGLDrivers(prefs: SharedPreferences?): List<String> {
+        return getCustomDrivers(prefs).filter { it.type.equals("OpenGL", ignoreCase = true) }.map { it.name }
     }
 
-    fun removeCustomOpenGLDriver(prefs: SharedPreferences, driver: String) {
-        val clean = driver.trim().uppercase()
-        val current = prefs.getStringSet("custom_opengl_drivers", emptySet()) ?: emptySet()
-        val updated = current - clean
-        prefs.edit().putStringSet("custom_opengl_drivers", updated).apply()
+    fun getCustomDriverFilePath(prefs: SharedPreferences?, driverName: String): String? {
+        val cleanName = driverName.trim().uppercase()
+        return getCustomDrivers(prefs).firstOrNull { it.name == cleanName }?.filePath?.takeIf { it.isNotBlank() }
     }
 
     /**
