@@ -20,6 +20,8 @@ data class DrawerMenuOptions(
     val mouseModeOptions: List<String>,
     val resolutionPercentOptions: List<String>,
     val scalePercentOptions: List<String>,
+    val customVulkanOptions: List<String> = emptyList(),
+    val customOpenGLOptions: List<String> = emptyList(),
 )
 
 data class DrawerMenuActions(
@@ -43,5 +45,8 @@ data class DrawerMenuActions(
     val onResolutionPercentSelect: (String) -> Unit,
     val onScalePercentSelect: (String) -> Unit,
     val onCloseDrawerRequest: () -> Unit,
+    val onAddCustomVulkan: ((String) -> Unit)? = null,
+    val onDeleteCustomVulkan: ((String) -> Unit)? = null,
+    val onAddCustomOpenGL: ((String) -> Unit)? = null,
+    val onDeleteCustomOpenGL: ((String) -> Unit)? = null,
 )
-

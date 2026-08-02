@@ -6,25 +6,21 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.xodos2.ui.glass.glassBlurModifier
-
-import androidx.compose.ui.unit.DpOffset
-import androidx.compose.ui.unit.dp
 
 @Composable
 fun DrawerDropdownField(
@@ -33,8 +29,13 @@ fun DrawerDropdownField(
     options: List<String>,
     onSelect: (String) -> Unit,
     modifier: Modifier = Modifier,
+    customOptions: List<String> = emptyList(),
+    onAddCustomOption: ((String) -> Unit)? = null,
+    onDeleteCustomOption: ((String) -> Unit)? = null,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    var showAddDialog by remember { mutableStateOf(false) }
+    var customDriverInput by remember { mutableStateOf("") }
 
     Column(modifier = modifier.fillMaxWidth().padding(vertical = 6.dp, horizontal = 16.dp)) {
         Box(
@@ -59,14 +60,17 @@ fun DrawerDropdownField(
                     ),
                     shape = RoundedCornerShape(12.dp)
                 )
-                .clickable { expanded = true }
-                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .padding(horizontal = 16.dp, vertical = 10.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { expanded = true }
+                ) {
                     Text(
                         text = label,
                         style = MaterialTheme.typography.labelSmall.copy(
@@ -83,11 +87,29 @@ fun DrawerDropdownField(
                         )
                     )
                 }
+
+                if (onAddCustomOption != null) {
+                    IconButton(
+                        onClick = { showAddDialog = true },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Add,
+                            contentDescription = "Add custom $label driver",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(Modifier.width(4.dp))
+                }
+
                 Icon(
                     imageVector = Icons.Rounded.KeyboardArrowDown,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier
+                        .size(20.dp)
+                        .clickable { expanded = true }
                 )
             }
         }
@@ -119,13 +141,37 @@ fun DrawerDropdownField(
                 )
         ) {
             options.forEach { opt ->
+                val isCustom = customOptions.contains(opt)
                 DropdownMenuItem(
-                    text = { 
-                        Text(
-                            text = opt, 
-                            color = MaterialTheme.colorScheme.onSurface,
-                            style = MaterialTheme.typography.bodyMedium
-                        ) 
+                    text = {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = opt,
+                                color = if (isCustom) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = if (opt == value) FontWeight.Bold else FontWeight.Normal,
+                                modifier = Modifier.weight(1f)
+                            )
+                            if (isCustom && onDeleteCustomOption != null) {
+                                IconButton(
+                                    onClick = {
+                                        onDeleteCustomOption(opt)
+                                    },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Delete,
+                                        contentDescription = "Delete custom driver $opt",
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
                     },
                     onClick = {
                         expanded = false
@@ -133,6 +179,91 @@ fun DrawerDropdownField(
                     }
                 )
             }
+
+            if (onAddCustomOption != null) {
+                HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+                DropdownMenuItem(
+                    text = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Rounded.Add,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = "+ Add Custom Driver",
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    },
+                    onClick = {
+                        expanded = false
+                        showAddDialog = true
+                    }
+                )
+            }
         }
+    }
+
+    if (showAddDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showAddDialog = false
+                customDriverInput = ""
+            },
+            title = {
+                Text(
+                    text = "Add Custom $label Driver",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Enter custom $label driver name (e.g., PANFROST, LIMA, CUSTOM_DRIVER):",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = customDriverInput,
+                        onValueChange = { customDriverInput = it },
+                        singleLine = true,
+                        placeholder = { Text("Driver name") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val name = customDriverInput.trim().uppercase()
+                        if (name.isNotBlank()) {
+                            onAddCustomOption?.invoke(name)
+                        }
+                        showAddDialog = false
+                        customDriverInput = ""
+                    },
+                    enabled = customDriverInput.trim().isNotBlank()
+                ) {
+                    Text("Add", color = MaterialTheme.colorScheme.primary)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showAddDialog = false
+                        customDriverInput = ""
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }

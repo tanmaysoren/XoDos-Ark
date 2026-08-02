@@ -129,20 +129,26 @@ fun DrawerMenu(
                     label = "Vulkan",
                     value = labels.desktopVulkanLabel,
                     options = options.desktopVulkanOptions,
+                    customOptions = options.customVulkanOptions,
                     onSelect = {
                         actions.onDesktopVulkanSelect(it)
                         actions.onCloseDrawerRequest()
                     },
+                    onAddCustomOption = actions.onAddCustomVulkan,
+                    onDeleteCustomOption = actions.onDeleteCustomVulkan,
                 )
 
                 DrawerDropdownField(
                     label = "OpenGL",
                     value = labels.desktopOpenGLLabel,
                     options = options.desktopOpenGLOptions,
+                    customOptions = options.customOpenGLOptions,
                     onSelect = {
                         actions.onDesktopOpenGLSelect(it)
                         actions.onCloseDrawerRequest()
                     },
+                    onAddCustomOption = actions.onAddCustomOpenGL,
+                    onDeleteCustomOption = actions.onDeleteCustomOpenGL,
                 )
 
                 DrawerExpandableSection(title = "View", defaultExpanded = true) {
