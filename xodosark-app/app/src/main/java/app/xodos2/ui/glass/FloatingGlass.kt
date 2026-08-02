@@ -41,6 +41,27 @@ private const val GlassFillLegacy = 0.081f
 
 fun glassBlurModifier(): Modifier = Modifier
 
+fun Modifier.glassDialogStyle(): Modifier = this
+    .background(
+        brush = Brush.verticalGradient(
+            colors = listOf(
+                Color(0xE6131124), // deep frosted glass background
+                Color(0xF20B0F19)
+            )
+        ),
+        shape = RoundedCornerShape(24.dp)
+    )
+    .border(
+        width = 1.dp,
+        brush = Brush.verticalGradient(
+            colors = listOf(
+                Color.White.copy(alpha = 0.28f),
+                Color.White.copy(alpha = 0.05f)
+            )
+        ),
+        shape = RoundedCornerShape(24.dp)
+    )
+
 fun floatingGlassBrush(): Brush =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         Brush.verticalGradient(
