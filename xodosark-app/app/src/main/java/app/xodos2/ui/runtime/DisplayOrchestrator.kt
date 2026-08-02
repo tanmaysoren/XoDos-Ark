@@ -275,39 +275,23 @@ val payload = buildString {
                 val customPath = AppPrefs.getCustomDriverFilePath(prefs, openGLMode)
                 val driverLower = openGLMode.lowercase()
                 b.append("unset MESA_GL_VERSION_OVERRIDE LIBGL_FB MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VN_DEBUG || true\n")             
+                b.append("export GALLIUM_DRIVER=\"$driverLower\"\n")
+                b.append("export MESA_LOADER_DRIVER_OVERRIDE=\"$driverLower\"\n")
+                b.append("export LIBGL_ALWAYS_SOFTWARE=0\n")
                 if (!customPath.isNullOrBlank()) {
                     val dir = File(customPath).parent
                     if (customPath.endsWith(".json", ignoreCase = true)) {
                         b.append("export VK_ICD_FILENAMES=\"$customPath\"\n")
                         b.append("export VK_DRIVER_FILES=\"$customPath\"\n")
-                        b.append("export GALLIUM_DRIVER=zink\n")
-                        b.append("export MESA_LOADER_DRIVER_OVERRIDE=zink\n")
-                        b.append("export LIBGL_ALWAYS_SOFTWARE=0\n")
                         b.append("export VKD3D_FEATURE_LEVEL=12_0\n")
                     } else if (customPath.endsWith(".so", ignoreCase = true)) {
-                        b.append("export GALLIUM_DRIVER=\"$driverLower\"\n")
-                        b.append("export MESA_LOADER_DRIVER_OVERRIDE=\"$driverLower\"\n")
-                        b.append("export LIBGL_ALWAYS_SOFTWARE=0\n")
                         b.append("export LD_PRELOAD=\"$customPath:\$LD_PRELOAD\"\n")
-                        if (!dir.isNullOrBlank()) {
-                            b.append("export LD_LIBRARY_PATH=\"$dir:\$LD_LIBRARY_PATH\"\n")
-                            b.append("export MESA_DRIVER_PATH=\"$dir\"\n")
-                            b.append("export LIBGL_DRIVERS_PATH=\"$dir\"\n")
-                        }
-                    } else {
-                        b.append("export GALLIUM_DRIVER=\"$driverLower\"\n")
-                        b.append("export MESA_LOADER_DRIVER_OVERRIDE=\"$driverLower\"\n")
-                        b.append("export LIBGL_ALWAYS_SOFTWARE=0\n")
-                        if (!dir.isNullOrBlank()) {
-                            b.append("export LD_LIBRARY_PATH=\"$dir:\$LD_LIBRARY_PATH\"\n")
-                            b.append("export MESA_DRIVER_PATH=\"$dir\"\n")
-                            b.append("export LIBGL_DRIVERS_PATH=\"$dir\"\n")
-                        }
                     }
-                } else {
-                    b.append("export GALLIUM_DRIVER=\"$driverLower\"\n")
-                    b.append("export MESA_LOADER_DRIVER_OVERRIDE=\"$driverLower\"\n")
-                    b.append("export LIBGL_ALWAYS_SOFTWARE=0\n")
+                    if (!dir.isNullOrBlank()) {
+                        b.append("export LD_LIBRARY_PATH=\"$dir:\$LD_LIBRARY_PATH\"\n")
+                        b.append("export MESA_DRIVER_PATH=\"$dir\"\n")
+                        b.append("export LIBGL_DRIVERS_PATH=\"$dir\"\n")
+                    }
                 }
             }
         }
@@ -408,39 +392,23 @@ val payload = buildString {
                 val customPath = AppPrefs.getCustomDriverFilePath(prefs, openGL)
                 val driverLower = openGL.lowercase()
                 sb.append("unset MESA_GL_VERSION_OVERRIDE LIBGL_FB MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VN_DEBUG || true\n")
+                sb.append("export GALLIUM_DRIVER=\"$driverLower\"\n")
+                sb.append("export MESA_LOADER_DRIVER_OVERRIDE=\"$driverLower\"\n")
+                sb.append("export LIBGL_ALWAYS_SOFTWARE=0\n")
                 if (!customPath.isNullOrBlank()) {
                     val dir = File(customPath).parent
                     if (customPath.endsWith(".json", ignoreCase = true)) {
                         sb.append("export VK_ICD_FILENAMES=\"$customPath\"\n")
                         sb.append("export VK_DRIVER_FILES=\"$customPath\"\n")
-                        sb.append("export GALLIUM_DRIVER=zink\n")
-                        sb.append("export MESA_LOADER_DRIVER_OVERRIDE=zink\n")
-                        sb.append("export LIBGL_ALWAYS_SOFTWARE=0\n")
                         sb.append("export VKD3D_FEATURE_LEVEL=12_0\n")
                     } else if (customPath.endsWith(".so", ignoreCase = true)) {
-                        sb.append("export GALLIUM_DRIVER=\"$driverLower\"\n")
-                        sb.append("export MESA_LOADER_DRIVER_OVERRIDE=\"$driverLower\"\n")
-                        sb.append("export LIBGL_ALWAYS_SOFTWARE=0\n")
                         sb.append("export LD_PRELOAD=\"$customPath:\$LD_PRELOAD\"\n")
-                        if (!dir.isNullOrBlank()) {
-                            sb.append("export LD_LIBRARY_PATH=\"$dir:\$LD_LIBRARY_PATH\"\n")
-                            sb.append("export MESA_DRIVER_PATH=\"$dir\"\n")
-                            sb.append("export LIBGL_DRIVERS_PATH=\"$dir\"\n")
-                        }
-                    } else {
-                        sb.append("export GALLIUM_DRIVER=\"$driverLower\"\n")
-                        sb.append("export MESA_LOADER_DRIVER_OVERRIDE=\"$driverLower\"\n")
-                        sb.append("export LIBGL_ALWAYS_SOFTWARE=0\n")
-                        if (!dir.isNullOrBlank()) {
-                            sb.append("export LD_LIBRARY_PATH=\"$dir:\$LD_LIBRARY_PATH\"\n")
-                            sb.append("export MESA_DRIVER_PATH=\"$dir\"\n")
-                            sb.append("export LIBGL_DRIVERS_PATH=\"$dir\"\n")
-                        }
                     }
-                } else {
-                    sb.append("export GALLIUM_DRIVER=\"$driverLower\"\n")
-                    sb.append("export MESA_LOADER_DRIVER_OVERRIDE=\"$driverLower\"\n")
-                    sb.append("export LIBGL_ALWAYS_SOFTWARE=0\n")
+                    if (!dir.isNullOrBlank()) {
+                        sb.append("export LD_LIBRARY_PATH=\"$dir:\$LD_LIBRARY_PATH\"\n")
+                        sb.append("export MESA_DRIVER_PATH=\"$dir\"\n")
+                        sb.append("export LIBGL_DRIVERS_PATH=\"$dir\"\n")
+                    }
                 }
             }
         }
