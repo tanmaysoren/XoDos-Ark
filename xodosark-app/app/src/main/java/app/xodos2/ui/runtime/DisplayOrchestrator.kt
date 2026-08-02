@@ -225,6 +225,7 @@ val payload = buildString {
         openGLMode: String,
         context: Context? = null,
     ): String {
+        val prefs = context?.getSharedPreferences("xodos2_prefs", Context.MODE_PRIVATE)
         val isMtkOrMali = context?.let { GPUInformation.isMali(it) || GPUInformation.isMediaTek(it) }
             ?: (GPUInformation.isMali(null) || GPUInformation.isMediaTek(null))
         val b = StringBuilder()
@@ -271,11 +272,19 @@ val payload = buildString {
                 b.append("export LIBGL_ALWAYS_SOFTWARE=1\n")
             }
             else -> {
+                val customPath = AppPrefs.getCustomDriverFilePath(prefs, openGLMode)
                 val driverLower = openGLMode.lowercase()
                 b.append("unset MESA_GL_VERSION_OVERRIDE LIBGL_FB VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VK_DRIVER_FILES VN_DEBUG || true\n")             
                 b.append("export GALLIUM_DRIVER=$driverLower\n")
                 b.append("export MESA_LOADER_DRIVER_OVERRIDE=$driverLower\n")
                 b.append("export LIBGL_ALWAYS_SOFTWARE=0\n")
+                if (!customPath.isNullOrBlank()) {
+                    val dir = File(customPath).parent
+                    if (!dir.isNullOrBlank()) {
+                        b.append("export LD_LIBRARY_PATH=$dir:\$LD_LIBRARY_PATH\n")
+                        b.append("export MESA_DRIVER_PATH=$dir\n")
+                    }
+                }
             }
         }
         when (vulkanMode) {
@@ -303,9 +312,20 @@ val payload = buildString {
                 b.append("export VK_ICD_FILENAMES=/dev/null\n")
             }
             else -> {
-                val vkLower = vulkanMode.lowercase()
-                b.append("export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/${vkLower}_icd.aarch64.json\n")
-                b.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/${vkLower}_icd.aarch64.json\n")
+                val customVkPath = AppPrefs.getCustomDriverFilePath(prefs, vulkanMode)
+                if (!customVkPath.isNullOrBlank()) {
+                    b.append("export VK_ICD_FILENAMES=$customVkPath\n")
+                    b.append("export VK_DRIVER_FILES=$customVkPath\n")
+                    if (customVkPath.endsWith(".so")) {
+                        b.append("export LD_PRELOAD=$customVkPath:\$LD_PRELOAD\n")
+                    }
+                    b.append("export VKD3D_FEATURE_LEVEL=12_0\n")
+                    b.append("export TU_DEBUG=noconform\n")
+                } else {
+                    val vkLower = vulkanMode.lowercase()
+                    b.append("export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/${vkLower}_icd.aarch64.json\n")
+                    b.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/${vkLower}_icd.aarch64.json\n")
+                }
             }
         }
         return b.toString()
@@ -361,11 +381,19 @@ val payload = buildString {
                 sb.append("export LIBGL_ALWAYS_SOFTWARE=1\n")
             }
             else -> {
+                val customPath = AppPrefs.getCustomDriverFilePath(prefs, openGL)
                 val driverLower = openGL.lowercase()
                 sb.append("unset MESA_GL_VERSION_OVERRIDE LIBGL_FB VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VK_DRIVER_FILES VN_DEBUG || true\n")
                 sb.append("export GALLIUM_DRIVER=$driverLower\n")
                 sb.append("export MESA_LOADER_DRIVER_OVERRIDE=$driverLower\n")
                 sb.append("export LIBGL_ALWAYS_SOFTWARE=0\n")
+                if (!customPath.isNullOrBlank()) {
+                    val dir = File(customPath).parent
+                    if (!dir.isNullOrBlank()) {
+                        sb.append("export LD_LIBRARY_PATH=$dir:\$LD_LIBRARY_PATH\n")
+                        sb.append("export MESA_DRIVER_PATH=$dir\n")
+                    }
+                }
             }
         }
         when (vulkan) {
@@ -393,9 +421,20 @@ val payload = buildString {
                 sb.append("export VK_ICD_FILENAMES=/dev/null\n")
             }
             else -> {
-                val vkLower = vulkan.lowercase()
-                sb.append("export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/${vkLower}_icd.aarch64.json\n")
-                sb.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/${vkLower}_icd.aarch64.json\n")
+                val customVkPath = AppPrefs.getCustomDriverFilePath(prefs, vulkan)
+                if (!customVkPath.isNullOrBlank()) {
+                    sb.append("export VK_ICD_FILENAMES=$customVkPath\n")
+                    sb.append("export VK_DRIVER_FILES=$customVkPath\n")
+                    if (customVkPath.endsWith(".so")) {
+                        sb.append("export LD_PRELOAD=$customVkPath:\$LD_PRELOAD\n")
+                    }
+                    sb.append("export VKD3D_FEATURE_LEVEL=12_0\n")
+                    sb.append("export TU_DEBUG=noconform\n")
+                } else {
+                    val vkLower = vulkan.lowercase()
+                    sb.append("export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/${vkLower}_icd.aarch64.json\n")
+                    sb.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/${vkLower}_icd.aarch64.json\n")
+                }
             }
         }
         return sb.toString()
