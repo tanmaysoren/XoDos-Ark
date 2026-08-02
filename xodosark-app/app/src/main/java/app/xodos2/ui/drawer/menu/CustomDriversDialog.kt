@@ -29,6 +29,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.xodos2.ui.glass.glassBlurModifier
+import app.xodos2.ui.glass.glassDialogStyle
+import app.xodos2.ui.glass.GlassButton
 import app.xodos2.ui.prefs.AppPrefs
 import app.xodos2.ui.prefs.AppPrefs.CustomDriverInfo
 import java.io.File
@@ -85,9 +87,8 @@ fun CustomDriversDialog(
         onDismissRequest = onDismiss,
         modifier = Modifier
             .fillMaxWidth()
-            .then(glassBlurModifier()),
-        containerColor = Color(0xF2120E24),
-        shape = RoundedCornerShape(20.dp),
+            .glassDialogStyle(),
+        containerColor = Color.Transparent,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
@@ -215,7 +216,7 @@ fun CustomDriversDialog(
 
                 Spacer(Modifier.height(12.dp))
 
-                Button(
+                GlassButton(
                     onClick = {
                         try {
                             filePickerLauncher.launch(arrayOf("*/*"))
@@ -223,21 +224,21 @@ fun CustomDriversDialog(
                             showAddForm = true
                         }
                     },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.FolderOpen,
                         contentDescription = null,
+                        tint = Color.White,
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(Modifier.width(8.dp))
-                    Text("Select Driver File")
+                    Text("Select Driver File", color = Color.White)
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
+            GlassButton(onClick = onDismiss) {
                 Text("Close", color = Color.White)
             }
         }
@@ -251,6 +252,8 @@ fun CustomDriversDialog(
                 driverFilePathInput = ""
                 driverNameInput = ""
             },
+            modifier = Modifier.glassDialogStyle(),
+            containerColor = Color.Transparent,
             title = {
                 Text(
                     text = "Configure Custom Driver",
@@ -270,7 +273,13 @@ fun CustomDriversDialog(
                         value = driverNameInput,
                         onValueChange = { driverNameInput = it },
                         singleLine = true,
-                        placeholder = { Text("e.g. TURNIP_ADRENO_730") },
+                        placeholder = { Text("e.g. TURNIP_ADRENO_730", color = Color.White.copy(alpha = 0.4f)) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFFA855F7),
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        ),
                         modifier = Modifier.fillMaxWidth()
                     )
 
@@ -287,13 +296,15 @@ fun CustomDriversDialog(
                     ) {
                         RadioButton(
                             selected = driverTypeInput == "Vulkan",
-                            onClick = { driverTypeInput = "Vulkan" }
+                            onClick = { driverTypeInput = "Vulkan" },
+                            colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFA855F7), unselectedColor = Color.White.copy(alpha = 0.6f))
                         )
                         Text("Vulkan", color = Color.White, modifier = Modifier.padding(end = 16.dp))
 
                         RadioButton(
                             selected = driverTypeInput == "OpenGL",
-                            onClick = { driverTypeInput = "OpenGL" }
+                            onClick = { driverTypeInput = "OpenGL" },
+                            colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFA855F7), unselectedColor = Color.White.copy(alpha = 0.6f))
                         )
                         Text("OpenGL", color = Color.White)
                     }
@@ -310,13 +321,19 @@ fun CustomDriversDialog(
                         value = driverFilePathInput,
                         onValueChange = { driverFilePathInput = it },
                         singleLine = true,
-                        placeholder = { Text("/path/to/driver.so or .json") },
+                        placeholder = { Text("/path/to/driver.so or .json", color = Color.White.copy(alpha = 0.4f)) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFFA855F7),
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        ),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
             },
             confirmButton = {
-                TextButton(
+                GlassButton(
                     onClick = {
                         val nameClean = driverNameInput.trim().replace(Regex("[^a-zA-Z0-9_]"), "_").uppercase()
                         if (nameClean.isNotBlank()) {
@@ -341,10 +358,9 @@ fun CustomDriversDialog(
                         selectedUri = null
                         driverFilePathInput = ""
                         driverNameInput = ""
-                    },
-                    enabled = driverNameInput.trim().isNotBlank()
+                    }
                 ) {
-                    Text("Save Driver", color = MaterialTheme.colorScheme.primary)
+                    Text("Save Driver", color = Color.White)
                 }
             },
             dismissButton = {
@@ -356,7 +372,7 @@ fun CustomDriversDialog(
                         driverNameInput = ""
                     }
                 ) {
-                    Text("Cancel")
+                    Text("Cancel", color = Color.White.copy(alpha = 0.7f))
                 }
             }
         )
