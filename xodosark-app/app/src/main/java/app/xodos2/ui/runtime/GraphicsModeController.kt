@@ -50,8 +50,14 @@ object GraphicsModeController {
         defaultVulkan: String = "LLVMPIPE",
         defaultOpenGL: String = "LLVMPIPE",
     ): Modes {
-        val vk = if (modes.vulkan in allowedVulkan) modes.vulkan else defaultVulkan
-        val gl = if (modes.openGL in allowedOpenGL) modes.openGL else defaultOpenGL
+        val vkClean = modes.vulkan.trim()
+        val glClean = modes.openGL.trim()
+        val vk = allowedVulkan.firstOrNull { it.equals(vkClean, ignoreCase = true) }
+            ?: allowedVulkan.firstOrNull { it.replace(" ", "_").equals(vkClean.replace(" ", "_"), ignoreCase = true) }
+            ?: defaultVulkan
+        val gl = allowedOpenGL.firstOrNull { it.equals(glClean, ignoreCase = true) }
+            ?: allowedOpenGL.firstOrNull { it.replace(" ", "_").equals(glClean.replace(" ", "_"), ignoreCase = true) }
+            ?: defaultOpenGL
         return Modes(vulkan = vk, openGL = gl)
     }
 
