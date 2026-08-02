@@ -73,10 +73,13 @@ fun CustomDriversDialog(
                 if (driverNameInput.isBlank()) {
                     driverNameInput = baseName
                 }
-                if (displayName.endsWith(".json", ignoreCase = true) || displayName.contains("turnip", ignoreCase = true) || displayName.contains("freedreno", ignoreCase = true) || displayName.contains("vulkan", ignoreCase = true)) {
-                    driverTypeInput = "Vulkan"
-                } else if (displayName.endsWith(".so", ignoreCase = true) || displayName.contains("mesa", ignoreCase = true) || displayName.contains("gallium", ignoreCase = true)) {
-                    driverTypeInput = "OpenGL"
+                // Only suggest Vulkan/OpenGL if user hasn't explicitly chosen OpenGL or Both
+                if (driverTypeInput != "OpenGL" && driverTypeInput != "Both") {
+                    if (displayName.endsWith(".json", ignoreCase = true) || displayName.contains("turnip", ignoreCase = true) || displayName.contains("freedreno", ignoreCase = true) || displayName.contains("vulkan", ignoreCase = true)) {
+                        driverTypeInput = "Vulkan"
+                    } else if (displayName.endsWith(".so", ignoreCase = true) || displayName.contains("mesa", ignoreCase = true) || displayName.contains("gallium", ignoreCase = true)) {
+                        driverTypeInput = "OpenGL"
+                    }
                 }
             }
             showAddForm = true
@@ -299,14 +302,21 @@ fun CustomDriversDialog(
                             onClick = { driverTypeInput = "Vulkan" },
                             colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFA855F7), unselectedColor = Color.White.copy(alpha = 0.6f))
                         )
-                        Text("Vulkan", color = Color.White, modifier = Modifier.padding(end = 16.dp))
+                        Text("Vulkan", color = Color.White, modifier = Modifier.padding(end = 12.dp))
 
                         RadioButton(
                             selected = driverTypeInput == "OpenGL",
                             onClick = { driverTypeInput = "OpenGL" },
                             colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFA855F7), unselectedColor = Color.White.copy(alpha = 0.6f))
                         )
-                        Text("OpenGL", color = Color.White)
+                        Text("OpenGL", color = Color.White, modifier = Modifier.padding(end = 12.dp))
+
+                        RadioButton(
+                            selected = driverTypeInput == "Both",
+                            onClick = { driverTypeInput = "Both" },
+                            colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFA855F7), unselectedColor = Color.White.copy(alpha = 0.6f))
+                        )
+                        Text("Both", color = Color.White)
                     }
 
                     Spacer(Modifier.height(12.dp))
