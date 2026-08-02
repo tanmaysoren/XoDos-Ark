@@ -75,6 +75,12 @@ fun ArchDrawerPage(
     onScalePercentSelectLabel: (String) -> Unit,
     vulkanOptions: List<String>,
     openGLOptions: List<String>,
+    customVulkanOptions: List<String> = emptyList(),
+    customOpenGLOptions: List<String> = emptyList(),
+    onAddCustomVulkan: ((String) -> Unit)? = null,
+    onDeleteCustomVulkan: ((String) -> Unit)? = null,
+    onAddCustomOpenGL: ((String) -> Unit)? = null,
+    onDeleteCustomOpenGL: ((String) -> Unit)? = null,
     hasArchRootfs: Boolean = true,
     onContainerManagerClick: () -> Unit,
     onRequestKeyboard: () -> Unit = {},
@@ -216,6 +222,8 @@ fun ArchDrawerPage(
             mouseModeOptions = listOf("Touchpad", "Tablet"),
             resolutionPercentOptions = (10..100 step 10).map { "${it}%" },
             scalePercentOptions = (100..1000 step 100).map { "${it}%" },
+            customVulkanOptions = customVulkanOptions,
+            customOpenGLOptions = customOpenGLOptions,
         ),
         actions = DrawerMenuActions(
             onDesktopClick = {
@@ -263,6 +271,10 @@ fun ArchDrawerPage(
             onResolutionPercentSelect = onResolutionPercentSelectLabel,
             onScalePercentSelect = onScalePercentSelectLabel,
             onCloseDrawerRequest = { scope.launch { drawerState.close() } },
+            onAddCustomVulkan = onAddCustomVulkan,
+            onDeleteCustomVulkan = onDeleteCustomVulkan,
+            onAddCustomOpenGL = onAddCustomOpenGL,
+            onDeleteCustomOpenGL = onDeleteCustomOpenGL,
         ),
         showDebianDesktop = true,
         extraContent = {
