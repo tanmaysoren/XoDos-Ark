@@ -1,5 +1,7 @@
 package app.xodos2.ui
 
+import app.xodos2.ui.drawer.menu.CustomDriversDialog
+
 import app.xodos2.ui.glass.GlassButton
 import android.Manifest
 import android.content.ActivityNotFoundException
@@ -439,6 +441,8 @@ var wineWaylandScriptEditorOpen by remember { mutableStateOf(false) }
     var desktopOpenGLMode by remember { mutableStateOf("LLVMPIPE") }
     var customVulkanDrivers by remember { mutableStateOf(AppPrefs.getCustomVulkanDrivers(prefs)) }
     var customOpenGLDrivers by remember { mutableStateOf(AppPrefs.getCustomOpenGLDrivers(prefs)) }
+    var customDriversList by remember { mutableStateOf(AppPrefs.getCustomDrivers(prefs)) }
+    var showCustomDriversDialog by remember { mutableStateOf(false) }
     var desktopHiddenInjectedKey by remember { mutableStateOf("") }
     var rendererSessionResetEpoch by remember { mutableIntStateOf(0) }
     var desktopLaunchBlackout by remember(startInTerminal) { mutableStateOf(!startInTerminal) }
@@ -2534,6 +2538,7 @@ if (showDistroSelection) {
                              showSlotPicker || 
                              showTurnipDriverDialog || 
                              showExitDialog ||
+                             showCustomDriversDialog ||
                              bootstrapDownloadInProgress
 
     val currentVulkanOptions = remember(customVulkanDrivers) {
@@ -2547,27 +2552,26 @@ if (showDistroSelection) {
         }
         (base + customOpenGLDrivers).distinct()
     }
-    val onAddCustomVulkan: (String) -> Unit = { driver ->
-        AppPrefs.addCustomVulkanDriver(prefs, driver)
+    val onAddCustomDriver: (AppPrefs.CustomDriverInfo) -> Unit = { driver ->
+        AppPrefs.addCustomDriver(prefs, driver)
+        customDriversList = AppPrefs.getCustomDrivers(prefs)
         customVulkanDrivers = AppPrefs.getCustomVulkanDrivers(prefs)
-        setDesktopVulkanMode(driver.uppercase())
-    }
-    val onDeleteCustomVulkan: (String) -> Unit = { driver ->
-        AppPrefs.removeCustomVulkanDriver(prefs, driver)
-        customVulkanDrivers = AppPrefs.getCustomVulkanDrivers(prefs)
-        if (desktopVulkanMode == driver.uppercase()) {
-            setDesktopVulkanMode("LLVMPIPE")
+        customOpenGLDrivers = AppPrefs.getCustomOpenGLDrivers(prefs)
+        if (driver.type.equals("Vulkan", ignoreCase = true)) {
+            setDesktopVulkanMode(driver.name)
+        } else {
+            setDesktopOpenGLMode(driver.name)
         }
     }
-    val onAddCustomOpenGL: (String) -> Unit = { driver ->
-        AppPrefs.addCustomOpenGLDriver(prefs, driver)
+    val onDeleteCustomDriver: (String) -> Unit = { driverName ->
+        AppPrefs.removeCustomDriver(prefs, driverName)
+        customDriversList = AppPrefs.getCustomDrivers(prefs)
+        customVulkanDrivers = AppPrefs.getCustomVulkanDrivers(prefs)
         customOpenGLDrivers = AppPrefs.getCustomOpenGLDrivers(prefs)
-        setDesktopOpenGLMode(driver.uppercase())
-    }
-    val onDeleteCustomOpenGL: (String) -> Unit = { driver ->
-        AppPrefs.removeCustomOpenGLDriver(prefs, driver)
-        customOpenGLDrivers = AppPrefs.getCustomOpenGLDrivers(prefs)
-        if (desktopOpenGLMode == driver.uppercase()) {
+        if (desktopVulkanMode == driverName) {
+            setDesktopVulkanMode("LLVMPIPE")
+        }
+        if (desktopOpenGLMode == driverName) {
             setDesktopOpenGLMode("LLVMPIPE")
         }
     }
@@ -2626,10 +2630,10 @@ if (showDistroSelection) {
             openGLOptions = currentOpenGLOptions,
             customVulkanOptions = customVulkanDrivers,
             customOpenGLOptions = customOpenGLDrivers,
-            onAddCustomVulkan = onAddCustomVulkan,
-            onDeleteCustomVulkan = onDeleteCustomVulkan,
-            onAddCustomOpenGL = onAddCustomOpenGL,
-            onDeleteCustomOpenGL = onDeleteCustomOpenGL,
+            onManageCustomDriversClick = {
+                scope.launch { drawerState.close() }
+                showCustomDriversDialog = true
+            },
             hasArchRootfs = hasContainer1,
             onContainerManagerClick = {
                 scope.launch { drawerState.close() }
@@ -2684,10 +2688,10 @@ if (showDistroSelection) {
             openGLOptions = currentOpenGLOptions,
             customVulkanOptions = customVulkanDrivers,
             customOpenGLOptions = customOpenGLDrivers,
-            onAddCustomVulkan = onAddCustomVulkan,
-            onDeleteCustomVulkan = onDeleteCustomVulkan,
-            onAddCustomOpenGL = onAddCustomOpenGL,
-            onDeleteCustomOpenGL = onDeleteCustomOpenGL,
+            onManageCustomDriversClick = {
+                scope.launch { drawerState.close() }
+                showCustomDriversDialog = true
+            },
             hasDebianRootfs = hasContainer2,
             onContainerManagerClick = {
                 scope.launch { drawerState.close() }
@@ -2746,10 +2750,10 @@ if (showDistroSelection) {
             openGLOptions = currentOpenGLOptions,
             customVulkanOptions = customVulkanDrivers,
             customOpenGLOptions = customOpenGLDrivers,
-            onAddCustomVulkan = onAddCustomVulkan,
-            onDeleteCustomVulkan = onDeleteCustomVulkan,
-            onAddCustomOpenGL = onAddCustomOpenGL,
-            onDeleteCustomOpenGL = onDeleteCustomOpenGL,
+            onManageCustomDriversClick = {
+                scope.launch { drawerState.close() }
+                showCustomDriversDialog = true
+            },
             hasWineRootfs = hasContainer3,
             onContainerManagerClick = {
                 scope.launch { drawerState.close() }
@@ -2844,6 +2848,15 @@ ShellScreen(
                 )
             }
         }
+        if (showCustomDriversDialog) {
+            CustomDriversDialog(
+                customDrivers = customDriversList,
+                onAddCustomDriver = onAddCustomDriver,
+                onDeleteCustomDriver = onDeleteCustomDriver,
+                onDismiss = { showCustomDriversDialog = false }
+            )
+        }
+
         FloatingMenuOrb(
             prefs = prefs,
             onClick = {
