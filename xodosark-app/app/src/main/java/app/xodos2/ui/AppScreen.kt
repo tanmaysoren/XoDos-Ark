@@ -2533,16 +2533,28 @@ if (showDistroSelection) {
         (base + customOpenGLDrivers).distinct()
     }
     val onAddCustomDriver: (AppPrefs.CustomDriverInfo) -> Unit = { driver ->
-        AppPrefs.addCustomDriver(prefs, driver)
-        customDriversList = AppPrefs.getCustomDrivers(prefs)
-        customVulkanDrivers = AppPrefs.getCustomVulkanDrivers(prefs)
-        customOpenGLDrivers = AppPrefs.getCustomOpenGLDrivers(prefs)
-        if (driver.type.equals("Vulkan", ignoreCase = true)) {
+        if (driver.type.equals("Both", ignoreCase = true)) {
+            AppPrefs.addCustomDriver(prefs, driver.copy(type = "Vulkan"))
+            AppPrefs.addCustomDriver(prefs, driver.copy(type = "OpenGL"))
+            customDriversList = AppPrefs.getCustomDrivers(prefs)
+            customVulkanDrivers = AppPrefs.getCustomVulkanDrivers(prefs)
+            customOpenGLDrivers = AppPrefs.getCustomOpenGLDrivers(prefs)
+            setDesktopVulkanMode(driver.name)
+            setDesktopOpenGLMode(driver.name)
+        } else if (driver.type.equals("Vulkan", ignoreCase = true)) {
+            AppPrefs.addCustomDriver(prefs, driver)
+            customDriversList = AppPrefs.getCustomDrivers(prefs)
+            customVulkanDrivers = AppPrefs.getCustomVulkanDrivers(prefs)
+            customOpenGLDrivers = AppPrefs.getCustomOpenGLDrivers(prefs)
             setDesktopVulkanMode(driver.name)
             if (desktopOpenGLMode == "LLVMPIPE") {
                 setDesktopOpenGLMode("ZINK")
             }
         } else {
+            AppPrefs.addCustomDriver(prefs, driver)
+            customDriversList = AppPrefs.getCustomDrivers(prefs)
+            customVulkanDrivers = AppPrefs.getCustomVulkanDrivers(prefs)
+            customOpenGLDrivers = AppPrefs.getCustomOpenGLDrivers(prefs)
             setDesktopOpenGLMode(driver.name)
         }
         DisplayOrchestrator.updateContainersSystemEnvironment(context, prefs)
