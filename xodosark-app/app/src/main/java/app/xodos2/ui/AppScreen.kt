@@ -2547,9 +2547,6 @@ if (showDistroSelection) {
             customVulkanDrivers = AppPrefs.getCustomVulkanDrivers(prefs)
             customOpenGLDrivers = AppPrefs.getCustomOpenGLDrivers(prefs)
             setDesktopVulkanMode(driver.name)
-            if (desktopOpenGLMode == "LLVMPIPE") {
-                setDesktopOpenGLMode("ZINK")
-            }
         } else {
             AppPrefs.addCustomDriver(prefs, driver)
             customDriversList = AppPrefs.getCustomDrivers(prefs)
