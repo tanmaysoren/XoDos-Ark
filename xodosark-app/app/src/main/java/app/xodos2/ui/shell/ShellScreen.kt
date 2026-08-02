@@ -60,7 +60,7 @@ import org.json.JSONObject
 
 // ── Glass Dialog & Custom Imports ────────────────────────────────
 import app.xodos2.ui.glass.GlassButton
-import app.xodos2.ui.glassDialogStyle
+import app.xodos2.ui.glass.glassDialogStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.background
