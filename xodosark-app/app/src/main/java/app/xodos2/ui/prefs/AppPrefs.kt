@@ -127,6 +127,49 @@ object AppPrefs {
         prefs.edit().putString(key, value).apply()
     }
 
+    val BUILTIN_VULKAN_MODES = listOf("LLVMPIPE", "VENUS", "TURNIP")
+    val BUILTIN_OPENGL_MODES = listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
+
+    fun getCustomVulkanDrivers(prefs: SharedPreferences): List<String> {
+        val set = prefs.getStringSet("custom_vulkan_drivers", emptySet()) ?: emptySet()
+        return set.map { it.trim().uppercase() }.filter { it.isNotBlank() && it !in BUILTIN_VULKAN_MODES }.sorted()
+    }
+
+    fun addCustomVulkanDriver(prefs: SharedPreferences, driver: String) {
+        val clean = driver.trim().uppercase()
+        if (clean.isBlank() || clean in BUILTIN_VULKAN_MODES) return
+        val current = prefs.getStringSet("custom_vulkan_drivers", emptySet()) ?: emptySet()
+        val updated = current + clean
+        prefs.edit().putStringSet("custom_vulkan_drivers", updated).apply()
+    }
+
+    fun removeCustomVulkanDriver(prefs: SharedPreferences, driver: String) {
+        val clean = driver.trim().uppercase()
+        val current = prefs.getStringSet("custom_vulkan_drivers", emptySet()) ?: emptySet()
+        val updated = current - clean
+        prefs.edit().putStringSet("custom_vulkan_drivers", updated).apply()
+    }
+
+    fun getCustomOpenGLDrivers(prefs: SharedPreferences): List<String> {
+        val set = prefs.getStringSet("custom_opengl_drivers", emptySet()) ?: emptySet()
+        return set.map { it.trim().uppercase() }.filter { it.isNotBlank() && it !in BUILTIN_OPENGL_MODES }.sorted()
+    }
+
+    fun addCustomOpenGLDriver(prefs: SharedPreferences, driver: String) {
+        val clean = driver.trim().uppercase()
+        if (clean.isBlank() || clean in BUILTIN_OPENGL_MODES) return
+        val current = prefs.getStringSet("custom_opengl_drivers", emptySet()) ?: emptySet()
+        val updated = current + clean
+        prefs.edit().putStringSet("custom_opengl_drivers", updated).apply()
+    }
+
+    fun removeCustomOpenGLDriver(prefs: SharedPreferences, driver: String) {
+        val clean = driver.trim().uppercase()
+        val current = prefs.getStringSet("custom_opengl_drivers", emptySet()) ?: emptySet()
+        val updated = current - clean
+        prefs.edit().putStringSet("custom_opengl_drivers", updated).apply()
+    }
+
     /**
      * Injected into the Debian headless (slot 0) PTY before the user’s script. Proot already sets
      * WAYLAND_DISPLAY etc. in the shell env (see proot/args); X11 clients need DISPLAY and
