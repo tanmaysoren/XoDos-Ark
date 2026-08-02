@@ -2539,9 +2539,13 @@ if (showDistroSelection) {
         customOpenGLDrivers = AppPrefs.getCustomOpenGLDrivers(prefs)
         if (driver.type.equals("Vulkan", ignoreCase = true)) {
             setDesktopVulkanMode(driver.name)
+            if (desktopOpenGLMode == "LLVMPIPE") {
+                setDesktopOpenGLMode("ZINK")
+            }
         } else {
             setDesktopOpenGLMode(driver.name)
         }
+        DisplayOrchestrator.updateContainersSystemEnvironment(context, prefs)
     }
     val onDeleteCustomDriver: (String) -> Unit = { driverName ->
         AppPrefs.removeCustomDriver(prefs, driverName)
