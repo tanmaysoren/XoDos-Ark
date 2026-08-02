@@ -264,11 +264,18 @@ val payload = buildString {
                 b.append("export LIBGL_ALWAYS_SOFTWARE=0\n")
                 b.append("export LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu/gl4es:\$LD_LIBRARY_PATH\n")
             }
-            else -> {
+            "LLVMPIPE" -> {
                 b.append("unset MESA_GL_VERSION_OVERRIDE LIBGL_FB VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VK_DRIVER_FILES VN_DEBUG || true\n")             
                 b.append("export GALLIUM_DRIVER=llvmpipe\n")
                 b.append("export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe\n")
                 b.append("export LIBGL_ALWAYS_SOFTWARE=1\n")
+            }
+            else -> {
+                val driverLower = openGLMode.lowercase()
+                b.append("unset MESA_GL_VERSION_OVERRIDE LIBGL_FB VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VK_DRIVER_FILES VN_DEBUG || true\n")             
+                b.append("export GALLIUM_DRIVER=$driverLower\n")
+                b.append("export MESA_LOADER_DRIVER_OVERRIDE=$driverLower\n")
+                b.append("export LIBGL_ALWAYS_SOFTWARE=0\n")
             }
         }
         when (vulkanMode) {
@@ -291,9 +298,14 @@ val payload = buildString {
                 b.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/freedreno_icd.aarch64.json\n")
                 b.append("export TU_DEBUG=noconform\n")
             }
-            else -> {
+            "LLVMPIPE" -> {
                 b.append("unset VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE VK_DRIVER_FILES VN_DEBUG || true\n")
                 b.append("export VK_ICD_FILENAMES=/dev/null\n")
+            }
+            else -> {
+                val vkLower = vulkanMode.lowercase()
+                b.append("export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/${vkLower}_icd.aarch64.json\n")
+                b.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/${vkLower}_icd.aarch64.json\n")
             }
         }
         return b.toString()
@@ -342,11 +354,18 @@ val payload = buildString {
                 sb.append("export LIBGL_ALWAYS_SOFTWARE=0\n")
                 sb.append("export LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu/gl4es:\$LD_LIBRARY_PATH\n")
             }
-            else -> {
+            "LLVMPIPE" -> {
                 sb.append("unset MESA_GL_VERSION_OVERRIDE LIBGL_FB VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VK_DRIVER_FILES VN_DEBUG || true\n")
                 sb.append("export GALLIUM_DRIVER=llvmpipe\n")
                 sb.append("export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe\n")
                 sb.append("export LIBGL_ALWAYS_SOFTWARE=1\n")
+            }
+            else -> {
+                val driverLower = openGL.lowercase()
+                sb.append("unset MESA_GL_VERSION_OVERRIDE LIBGL_FB VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VK_DRIVER_FILES VN_DEBUG || true\n")
+                sb.append("export GALLIUM_DRIVER=$driverLower\n")
+                sb.append("export MESA_LOADER_DRIVER_OVERRIDE=$driverLower\n")
+                sb.append("export LIBGL_ALWAYS_SOFTWARE=0\n")
             }
         }
         when (vulkan) {
@@ -369,9 +388,14 @@ val payload = buildString {
                 sb.append("export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/freedreno_icd.aarch64.json\n")
                 sb.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/freedreno_icd.aarch64.json\n")
             }
-            else -> {
+            "LLVMPIPE" -> {
                 sb.append("unset VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE VK_DRIVER_FILES VN_DEBUG || true\n")
                 sb.append("export VK_ICD_FILENAMES=/dev/null\n")
+            }
+            else -> {
+                val vkLower = vulkan.lowercase()
+                sb.append("export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/${vkLower}_icd.aarch64.json\n")
+                sb.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/${vkLower}_icd.aarch64.json\n")
             }
         }
         return sb.toString()
