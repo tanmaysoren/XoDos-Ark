@@ -266,15 +266,16 @@ val payload = buildString {
                 b.append("export LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu/gl4es:\$LD_LIBRARY_PATH\n")
             }
             "LLVMPIPE" -> {
-                b.append("unset MESA_GL_VERSION_OVERRIDE LIBGL_FB VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VK_DRIVER_FILES VN_DEBUG || true\n")             
+                b.append("unset MESA_GL_VERSION_OVERRIDE LIBGL_FB VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VK_DRIVER_FILES VN_DEBUG ZINK_DESCRIPTORS ZINK_CONTEXT_THREADED ZINK_DEBUG || true\n")             
                 b.append("export GALLIUM_DRIVER=llvmpipe\n")
                 b.append("export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe\n")
                 b.append("export LIBGL_ALWAYS_SOFTWARE=1\n")
+                b.append("export VK_ICD_FILENAMES=/dev/null\n")
             }
             else -> {
                 val customPath = AppPrefs.getCustomDriverFilePath(prefs, openGLMode)
                 val driverLower = openGLMode.lowercase()
-                b.append("unset MESA_GL_VERSION_OVERRIDE LIBGL_FB MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VN_DEBUG || true\n")             
+                b.append("unset MESA_GL_VERSION_OVERRIDE LIBGL_FB MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VN_DEBUG ZINK_DESCRIPTORS ZINK_CONTEXT_THREADED ZINK_DEBUG || true\n")             
                 b.append("export GALLIUM_DRIVER=\"$driverLower\"\n")
                 b.append("export MESA_LOADER_DRIVER_OVERRIDE=\"$driverLower\"\n")
                 b.append("export LIBGL_ALWAYS_SOFTWARE=0\n")
@@ -383,15 +384,16 @@ val payload = buildString {
                 sb.append("export LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu/gl4es:\$LD_LIBRARY_PATH\n")
             }
             "LLVMPIPE" -> {
-                sb.append("unset MESA_GL_VERSION_OVERRIDE LIBGL_FB VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VK_DRIVER_FILES VN_DEBUG || true\n")
+                sb.append("unset MESA_GL_VERSION_OVERRIDE LIBGL_FB VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VK_DRIVER_FILES VN_DEBUG ZINK_DESCRIPTORS ZINK_CONTEXT_THREADED ZINK_DEBUG || true\n")
                 sb.append("export GALLIUM_DRIVER=llvmpipe\n")
                 sb.append("export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe\n")
                 sb.append("export LIBGL_ALWAYS_SOFTWARE=1\n")
+                sb.append("export VK_ICD_FILENAMES=/dev/null\n")
             }
             else -> {
                 val customPath = AppPrefs.getCustomDriverFilePath(prefs, openGL)
                 val driverLower = openGL.lowercase()
-                sb.append("unset MESA_GL_VERSION_OVERRIDE LIBGL_FB MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VN_DEBUG || true\n")
+                sb.append("unset MESA_GL_VERSION_OVERRIDE LIBGL_FB MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VN_DEBUG ZINK_DESCRIPTORS ZINK_CONTEXT_THREADED ZINK_DEBUG || true\n")
                 sb.append("export GALLIUM_DRIVER=\"$driverLower\"\n")
                 sb.append("export MESA_LOADER_DRIVER_OVERRIDE=\"$driverLower\"\n")
                 sb.append("export LIBGL_ALWAYS_SOFTWARE=0\n")
