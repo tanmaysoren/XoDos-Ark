@@ -142,20 +142,29 @@ object AppPrefs {
         return set.mapNotNull { entry ->
             val parts = entry.split("|")
             if (parts.size >= 3) {
+                val rawName = parts[0].trim()
+                val cleanName = rawName.replace(Regex("[^a-zA-Z0-9_]"), "_").uppercase()
+                if (cleanName.isBlank()) null else
                 CustomDriverInfo(
-                    name = parts[0].trim().uppercase(),
+                    name = cleanName,
                     type = parts[1].trim(),
                     filePath = parts.subList(2, parts.size).joinToString("|")
                 )
             } else if (parts.size == 2) {
+                val rawName = parts[0].trim()
+                val cleanName = rawName.replace(Regex("[^a-zA-Z0-9_]"), "_").uppercase()
+                if (cleanName.isBlank()) null else
                 CustomDriverInfo(
-                    name = parts[0].trim().uppercase(),
+                    name = cleanName,
                     type = parts[1].trim(),
                     filePath = ""
                 )
             } else if (parts.isNotEmpty() && parts[0].isNotBlank()) {
+                val rawName = parts[0].trim()
+                val cleanName = rawName.replace(Regex("[^a-zA-Z0-9_]"), "_").uppercase()
+                if (cleanName.isBlank()) null else
                 CustomDriverInfo(
-                    name = parts[0].trim().uppercase(),
+                    name = cleanName,
                     type = "Vulkan",
                     filePath = ""
                 )
@@ -164,7 +173,7 @@ object AppPrefs {
     }
 
     fun addCustomDriver(prefs: SharedPreferences, info: CustomDriverInfo) {
-        val cleanName = info.name.trim().uppercase()
+        val cleanName = info.name.trim().replace(Regex("[^a-zA-Z0-9_]"), "_").uppercase()
         if (cleanName.isBlank()) return
         val currentList = getCustomDrivers(prefs).filter { it.name != cleanName }
         val newList = currentList + CustomDriverInfo(cleanName, info.type, info.filePath)
@@ -173,7 +182,7 @@ object AppPrefs {
     }
 
     fun removeCustomDriver(prefs: SharedPreferences, name: String) {
-        val cleanName = name.trim().uppercase()
+        val cleanName = name.trim().replace(Regex("[^a-zA-Z0-9_]"), "_").uppercase()
         val currentList = getCustomDrivers(prefs).filter { it.name != cleanName }
         val set = currentList.map { "${it.name}|${it.type}|${it.filePath}" }.toSet()
         prefs.edit().putStringSet("custom_drivers_metadata", set).apply()
@@ -188,7 +197,7 @@ object AppPrefs {
     }
 
     fun getCustomDriverFilePath(prefs: SharedPreferences?, driverName: String): String? {
-        val cleanName = driverName.trim().uppercase()
+        val cleanName = driverName.trim().replace(Regex("[^a-zA-Z0-9_]"), "_").uppercase()
         return getCustomDrivers(prefs).firstOrNull { it.name == cleanName }?.filePath?.takeIf { it.isNotBlank() }
     }
 
