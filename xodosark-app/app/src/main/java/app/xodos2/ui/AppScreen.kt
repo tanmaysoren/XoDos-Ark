@@ -437,6 +437,8 @@ var wineWaylandScriptEditorOpen by remember { mutableStateOf(false) }
     var pendingAutoShowWayland by remember { mutableStateOf(false) }
     var desktopVulkanMode by remember { mutableStateOf("LLVMPIPE") }
     var desktopOpenGLMode by remember { mutableStateOf("LLVMPIPE") }
+    var customVulkanDrivers by remember { mutableStateOf(AppPrefs.getCustomVulkanDrivers(prefs)) }
+    var customOpenGLDrivers by remember { mutableStateOf(AppPrefs.getCustomOpenGLDrivers(prefs)) }
     var desktopHiddenInjectedKey by remember { mutableStateOf("") }
     var rendererSessionResetEpoch by remember { mutableIntStateOf(0) }
     var desktopLaunchBlackout by remember(startInTerminal) { mutableStateOf(!startInTerminal) }
@@ -1059,8 +1061,8 @@ fun downloadBootstrapArchive() {
         val r = NativeInstallCoordinator.initNativeAndSyncAssets(
             context = context,
             prefs = prefs,
-            allowedVulkan = VULKAN_MODES,
-            allowedOpenGL = OPENGL_MODES,
+            allowedVulkan = (AppPrefs.BUILTIN_VULKAN_MODES + customVulkanDrivers).distinct(),
+            allowedOpenGL = (AppPrefs.BUILTIN_OPENGL_MODES + customOpenGLDrivers).distinct(),
         )
         if (!r.ok) {
             errorMsg = "Failed to initialize native layer"
@@ -1392,11 +1394,13 @@ fun checkAndPromptTurnipDrivers() {
     
     
 fun setDesktopVulkanMode(mode: String) {
+    val allowedVk = (AppPrefs.BUILTIN_VULKAN_MODES + customVulkanDrivers).distinct()
+    val allowedGl = (AppPrefs.BUILTIN_OPENGL_MODES + customOpenGLDrivers).distinct()
     val prev = GraphicsModeController.Modes(desktopVulkanMode, desktopOpenGLMode)
     var next = GraphicsModeController.sanitize(
         GraphicsModeController.Modes(vulkan = mode, openGL = desktopOpenGLMode),
-        allowedVulkan = VULKAN_MODES,
-        allowedOpenGL = OPENGL_MODES,
+        allowedVulkan = allowedVk,
+        allowedOpenGL = allowedGl,
     )
 
     // force OpenGL to LLVMPIPE when Venus is active
@@ -1422,11 +1426,13 @@ fun setDesktopVulkanMode(mode: String) {
 }
 
     fun setDesktopOpenGLMode(mode: String) {
+        val allowedVk = (AppPrefs.BUILTIN_VULKAN_MODES + customVulkanDrivers).distinct()
+        val allowedGl = (AppPrefs.BUILTIN_OPENGL_MODES + customOpenGLDrivers).distinct()
         val prev = GraphicsModeController.Modes(desktopVulkanMode, desktopOpenGLMode)
         val next = GraphicsModeController.sanitize(
             GraphicsModeController.Modes(vulkan = desktopVulkanMode, openGL = mode),
-            allowedVulkan = VULKAN_MODES,
-            allowedOpenGL = OPENGL_MODES,
+            allowedVulkan = allowedVk,
+            allowedOpenGL = allowedGl,
         )
         if (GraphicsModeController.applyAndMaybeToggleVirglHost(prefs, prev, next)) {
             rendererSessionResetEpoch++
@@ -2530,6 +2536,42 @@ if (showDistroSelection) {
                              showExitDialog ||
                              bootstrapDownloadInProgress
 
+    val currentVulkanOptions = remember(customVulkanDrivers) {
+        (AppPrefs.BUILTIN_VULKAN_MODES + customVulkanDrivers).distinct()
+    }
+    val currentOpenGLOptions = remember(customOpenGLDrivers, desktopVulkanMode) {
+        val base = when (desktopVulkanMode) {
+            "TURNIP" -> listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
+            "VENUS"  -> listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
+            else     -> AppPrefs.BUILTIN_OPENGL_MODES
+        }
+        (base + customOpenGLDrivers).distinct()
+    }
+    val onAddCustomVulkan: (String) -> Unit = { driver ->
+        AppPrefs.addCustomVulkanDriver(prefs, driver)
+        customVulkanDrivers = AppPrefs.getCustomVulkanDrivers(prefs)
+        setDesktopVulkanMode(driver.uppercase())
+    }
+    val onDeleteCustomVulkan: (String) -> Unit = { driver ->
+        AppPrefs.removeCustomVulkanDriver(prefs, driver)
+        customVulkanDrivers = AppPrefs.getCustomVulkanDrivers(prefs)
+        if (desktopVulkanMode == driver.uppercase()) {
+            setDesktopVulkanMode("LLVMPIPE")
+        }
+    }
+    val onAddCustomOpenGL: (String) -> Unit = { driver ->
+        AppPrefs.addCustomOpenGLDriver(prefs, driver)
+        customOpenGLDrivers = AppPrefs.getCustomOpenGLDrivers(prefs)
+        setDesktopOpenGLMode(driver.uppercase())
+    }
+    val onDeleteCustomOpenGL: (String) -> Unit = { driver ->
+        AppPrefs.removeCustomOpenGLDriver(prefs, driver)
+        customOpenGLDrivers = AppPrefs.getCustomOpenGLDrivers(prefs)
+        if (desktopOpenGLMode == driver.uppercase()) {
+            setDesktopOpenGLMode("LLVMPIPE")
+        }
+    }
+
     AppDrawer(
         drawerState = drawerState,
         isBackgroundBlurred = isAnyDialogVisible,
@@ -2580,12 +2622,14 @@ if (showDistroSelection) {
                 val pct = label.removeSuffix("%").trim().toIntOrNull()
                 if (pct != null) persistScalePercent(pct)
             },
-            vulkanOptions = VULKAN_MODES,
-            openGLOptions = when (desktopVulkanMode) {
-                "TURNIP" -> listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
-                "VENUS"  -> listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
-                else     -> OPENGL_MODES
-            },
+            vulkanOptions = currentVulkanOptions,
+            openGLOptions = currentOpenGLOptions,
+            customVulkanOptions = customVulkanDrivers,
+            customOpenGLOptions = customOpenGLDrivers,
+            onAddCustomVulkan = onAddCustomVulkan,
+            onDeleteCustomVulkan = onDeleteCustomVulkan,
+            onAddCustomOpenGL = onAddCustomOpenGL,
+            onDeleteCustomOpenGL = onDeleteCustomOpenGL,
             hasArchRootfs = hasContainer1,
             onContainerManagerClick = {
                 scope.launch { drawerState.close() }
@@ -2636,12 +2680,14 @@ if (showDistroSelection) {
                 val pct = label.removeSuffix("%").trim().toIntOrNull()
                 if (pct != null) persistScalePercent(pct)
             },
-            vulkanOptions = VULKAN_MODES,
-            openGLOptions = when (desktopVulkanMode) {
-                "TURNIP" -> listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
-                "VENUS"  -> listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
-                else     -> OPENGL_MODES
-            },
+            vulkanOptions = currentVulkanOptions,
+            openGLOptions = currentOpenGLOptions,
+            customVulkanOptions = customVulkanDrivers,
+            customOpenGLOptions = customOpenGLDrivers,
+            onAddCustomVulkan = onAddCustomVulkan,
+            onDeleteCustomVulkan = onDeleteCustomVulkan,
+            onAddCustomOpenGL = onAddCustomOpenGL,
+            onDeleteCustomOpenGL = onDeleteCustomOpenGL,
             hasDebianRootfs = hasContainer2,
             onContainerManagerClick = {
                 scope.launch { drawerState.close() }
@@ -2696,12 +2742,14 @@ if (showDistroSelection) {
                 val pct = label.removeSuffix("%").trim().toIntOrNull()
                 if (pct != null) persistScalePercent(pct)
             },
-            vulkanOptions = VULKAN_MODES,
-            openGLOptions = when (desktopVulkanMode) {
-                "TURNIP" -> listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
-                "VENUS"  -> listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
-                else     -> OPENGL_MODES
-            },
+            vulkanOptions = currentVulkanOptions,
+            openGLOptions = currentOpenGLOptions,
+            customVulkanOptions = customVulkanDrivers,
+            customOpenGLOptions = customOpenGLDrivers,
+            onAddCustomVulkan = onAddCustomVulkan,
+            onDeleteCustomVulkan = onDeleteCustomVulkan,
+            onAddCustomOpenGL = onAddCustomOpenGL,
+            onDeleteCustomOpenGL = onDeleteCustomOpenGL,
             hasWineRootfs = hasContainer3,
             onContainerManagerClick = {
                 scope.launch { drawerState.close() }
