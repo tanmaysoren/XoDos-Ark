@@ -298,7 +298,7 @@ object NativeInstallCoordinator {
         export DISPLAY=:0
         export MOZ_FAKE_NO_SANDBOX=1
         export DISTRO=$distroId
-        source /etc/environment
+        [ -f /etc/profile.d/xodos_graphics.sh ] && . /etc/profile.d/xodos_graphics.sh
     """.trimIndent()
 
     val stype = """

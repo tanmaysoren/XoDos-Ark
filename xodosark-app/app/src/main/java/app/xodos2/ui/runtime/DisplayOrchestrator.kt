@@ -448,9 +448,21 @@ val payload = buildString {
             val etcDir = File(containerDir, "etc")
             etcDir.mkdirs()
 
-            // 1. Write /etc/environment
+            // 1. Write /etc/environment with clean key-value pairs
             val envFile = File(etcDir, "environment")
-            envFile.writeText(envContent)
+            val cleanEnvLines = envContent.lines()
+                .filter { it.trim().startsWith("export ") }
+                .map { line ->
+                    val raw = line.trim().removePrefix("export ").trim()
+                    if (raw.contains("=")) {
+                        val parts = raw.split("=", limit = 2)
+                        val k = parts[0].trim()
+                        val v = parts[1].trim().removeSurrounding("\"").removeSurrounding("'")
+                        "$k=\"$v\""
+                    } else ""
+                }
+                .filter { it.isNotBlank() }
+            envFile.writeText(cleanEnvLines.joinToString("\n") + "\n")
 
             // 2. Write /etc/profile.d/xodos_graphics.sh
             val profileDir = File(etcDir, "profile.d")
@@ -461,11 +473,14 @@ val payload = buildString {
 
             val sourceLine = "[ -f /etc/profile.d/xodos_graphics.sh ] && . /etc/profile.d/xodos_graphics.sh"
 
-            // 3. Ensure /etc/bash.bashrc sources /etc/profile.d/xodos_graphics.sh
+            // 3. Ensure /etc/bash.bashrc sources /etc/profile.d/xodos_graphics.sh instead of /etc/environment
             val bashrcFile = File(etcDir, "bash.bashrc")
             if (bashrcFile.exists()) {
-                val existing = bashrcFile.readText()
-                if (!existing.contains("xodos_graphics.sh")) {
+                var existing = bashrcFile.readText()
+                if (existing.contains("source /etc/environment")) {
+                    existing = existing.replace("source /etc/environment", sourceLine)
+                    bashrcFile.writeText(existing)
+                } else if (!existing.contains("xodos_graphics.sh")) {
                     bashrcFile.appendText("\n" + sourceLine + "\n")
                 }
             } else {
@@ -477,8 +492,11 @@ val payload = buildString {
             if (rootDir.isDirectory) {
                 val rootBashrc = File(rootDir, ".bashrc")
                 if (rootBashrc.exists()) {
-                    val existing = rootBashrc.readText()
-                    if (!existing.contains("xodos_graphics.sh")) {
+                    var existing = rootBashrc.readText()
+                    if (existing.contains("source /etc/environment")) {
+                        existing = existing.replace("source /etc/environment", sourceLine)
+                        rootBashrc.writeText(existing)
+                    } else if (!existing.contains("xodos_graphics.sh")) {
                         rootBashrc.appendText("\n" + sourceLine + "\n")
                     }
                 } else {
