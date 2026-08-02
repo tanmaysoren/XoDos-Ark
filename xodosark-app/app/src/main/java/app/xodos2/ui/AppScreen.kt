@@ -49,6 +49,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import app.xodos2.ui.glass.glassBlurModifier
+import app.xodos2.ui.glass.glassDialogStyle
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -94,27 +95,6 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 
 import android.view.WindowManager
-
-fun Modifier.glassDialogStyle(): Modifier = this
-    .background(
-        brush = Brush.verticalGradient(
-            colors = listOf(
-                Color(0xE6131124), // deep frosted glass background
-                Color(0xF20B0F19)
-            )
-        ),
-        shape = RoundedCornerShape(24.dp)
-    )
-    .border(
-        width = 1.dp,
-        brush = Brush.verticalGradient(
-            colors = listOf(
-                Color.White.copy(alpha = 0.28f),
-                Color.White.copy(alpha = 0.05f)
-            )
-        ),
-        shape = RoundedCornerShape(24.dp)
-    )
 
 private val VULKAN_MODES = listOf("LLVMPIPE", "VENUS", "TURNIP")
 private val OPENGL_MODES = listOf("LLVMPIPE", "VIRGL", "ZINK", "GL4ES")
