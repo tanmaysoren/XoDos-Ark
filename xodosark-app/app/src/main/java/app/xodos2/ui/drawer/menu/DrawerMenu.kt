@@ -134,8 +134,6 @@ fun DrawerMenu(
                         actions.onDesktopVulkanSelect(it)
                         actions.onCloseDrawerRequest()
                     },
-                    onAddCustomOption = actions.onAddCustomVulkan,
-                    onDeleteCustomOption = actions.onDeleteCustomVulkan,
                 )
 
                 DrawerDropdownField(
@@ -147,9 +145,16 @@ fun DrawerMenu(
                         actions.onDesktopOpenGLSelect(it)
                         actions.onCloseDrawerRequest()
                     },
-                    onAddCustomOption = actions.onAddCustomOpenGL,
-                    onDeleteCustomOption = actions.onDeleteCustomOpenGL,
                 )
+
+                if (actions.onManageCustomDriversClick != null) {
+                    DrawerTextItem(
+                        title = "Custom Drivers",
+                        onClick = {
+                            actions.onManageCustomDriversClick.invoke()
+                        }
+                    )
+                }
 
                 DrawerExpandableSection(title = "View", defaultExpanded = true) {
                     DrawerDropdownField(

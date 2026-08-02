@@ -45,6 +45,7 @@ data class DrawerMenuActions(
     val onResolutionPercentSelect: (String) -> Unit,
     val onScalePercentSelect: (String) -> Unit,
     val onCloseDrawerRequest: () -> Unit,
+    val onManageCustomDriversClick: (() -> Unit)? = null,
     val onAddCustomVulkan: ((String) -> Unit)? = null,
     val onDeleteCustomVulkan: ((String) -> Unit)? = null,
     val onAddCustomOpenGL: ((String) -> Unit)? = null,
