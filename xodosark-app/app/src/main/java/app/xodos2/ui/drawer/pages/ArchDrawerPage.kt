@@ -19,7 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import app.xodos2.ui.glassDialogStyle
+import app.xodos2.ui.glass.glassDialogStyle
 import app.xodos2.ui.glass.GlassButton
 import app.xodos2.TerminalSessionIds
 import app.xodos2.shell.ShellFonts
