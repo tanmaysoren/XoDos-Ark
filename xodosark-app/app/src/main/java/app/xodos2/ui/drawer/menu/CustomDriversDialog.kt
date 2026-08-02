@@ -318,7 +318,7 @@ fun CustomDriversDialog(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        val nameClean = driverNameInput.trim().uppercase()
+                        val nameClean = driverNameInput.trim().replace(Regex("[^a-zA-Z0-9_]"), "_").uppercase()
                         if (nameClean.isNotBlank()) {
                             var finalPath = driverFilePathInput.trim()
                             val uri = selectedUri
