@@ -96,7 +96,7 @@ import java.io.InputStreamReader
 
 import android.view.WindowManager
 
-private val VULKAN_MODES = listOf("LLVMPIPE", "VENUS", "TURNIP")
+private val VULKAN_MODES = listOf("LLVMPIPE", "VENUS", "TURNIP", "PANVK", "MALI_COMPAT")
 private val OPENGL_MODES = listOf("LLVMPIPE", "VIRGL", "ZINK", "GL4ES")
 
 private const val X11_MODE_LABEL_NATIVE = "Native"
@@ -2526,8 +2526,8 @@ if (showDistroSelection) {
     }
     val currentOpenGLOptions = remember(customOpenGLDrivers, desktopVulkanMode) {
         val base = when (desktopVulkanMode) {
-            "TURNIP" -> listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
-            "VENUS"  -> listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
+            "TURNIP", "PANVK", "MALI_COMPAT" -> listOf("LLVMPIPE", "VIRGL", "GL4ES")
+            "VENUS"  -> listOf("LLVMPIPE", "VIRGL", "GL4ES")
             else     -> AppPrefs.BUILTIN_OPENGL_MODES
         }
         (base + customOpenGLDrivers).distinct()
