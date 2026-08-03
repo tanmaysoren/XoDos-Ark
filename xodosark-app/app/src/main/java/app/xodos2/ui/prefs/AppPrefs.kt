@@ -3,7 +3,7 @@ package app.xodos2.ui.prefs
 import android.content.SharedPreferences
 
 object AppPrefs {
-    val BUILTIN_VULKAN_MODES = listOf("LLVMPIPE", "TURNIP", "VENUS")
+    val BUILTIN_VULKAN_MODES = listOf("LLVMPIPE", "TURNIP", "PANVK", "MALI_COMPAT", "VENUS")
     val BUILTIN_OPENGL_MODES = listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
 
     private const val PREF_LAUNCHER_DEFAULT = "launcher_default_mode"
