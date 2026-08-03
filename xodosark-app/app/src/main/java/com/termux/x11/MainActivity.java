@@ -207,211 +207,212 @@ public class MainActivity extends LoriePreferences {
     private final SharedPreferences.OnSharedPreferenceChangeListener preferencesChangedListener = (__, key) -> onPreferencesChanged(key);
 
 
-/// new mod
-private DrawerLayout drawerLayout;   
-private static boolean softKeyboardShown = false;
- // HUD 
-private HudService hudService;
-private boolean isBound = false;
+    /// new mod
+    private DrawerLayout drawerLayout;   
+    private static boolean softKeyboardShown = false;
+     // HUD 
+    private HudService hudService;
+    private boolean isBound = false;
 
-private ServiceConnection hudConnection = new ServiceConnection() {
-    @Override
-    public void onServiceConnected(ComponentName name, IBinder service) {
-        HudService.LocalBinder binder = (HudService.LocalBinder) service;
-        hudService = binder.getService();
-        // If activity is resumed, attach immediately
-        if (isResumed) {
-            hudService.attachToActivity(MainActivity.this);
-        }
-        isBound = true;
-    }
-
-    @Override
-    public void onServiceDisconnected(ComponentName name) {
-        isBound = false;
-        hudService = null;
-    }
-};
-
-private boolean isResumed = false;
-
-// Call this when the HUD preference is enabled
-public void startHudService() {
-    Intent intent = new Intent(this, HudService.class);
-    
-        startService(intent);
-    
-    bindService(intent, hudConnection, Context.BIND_AUTO_CREATE);
-}
-
-// Call this when the HUD preference is disabled
-public void stopHudService() {
-    if (isBound) {
-        unbindService(hudConnection);
-        isBound = false;
-    }
-    Intent intent = new Intent(this, HudService.class);
-    stopService(intent);
-}
-
-// Called from onStart to start HUD if preference is enabled
-private void startHudIfEnabled() {
-    SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-    boolean hudEnabled = prefs.getBoolean("hud_enabled", false);
-    if (hudEnabled) {
-        startHudService();
-    }
-}
-
-
- //////////// gamepad 
-private void checkConnectedControllers() {
-    int[] deviceIds = InputDevice.getDeviceIds();
-    for (int id : deviceIds) {
-        InputDevice device = InputDevice.getDevice(id);
-        if ((device.getSources() & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD
-            && !isIgnoredDevice(device)) {
-            
-            String msg = "Controller:🎮 " + device.getName() + " (ID:" + id + ")";
-            Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
-            Log.d("ControllerDebug", msg);
-        }
-    }
-}
-
-
- /// check fingerprint sensors that acts like gamepad
- private boolean isIgnoredDevice(InputDevice device) {
-    if (device == null) return true;
-
-    String name = device.getName().toLowerCase();
-
-    // Ignore fingerprint or virtual devices that masquerade as gamepads
-    return name.contains("uinput-fpc") ||
-           name.contains("fingerprint") ||
-           name.contains("fpc1020") ||   // common FPC models
-           name.contains("goodix")   ||  // Goodix sensors
-           device.isVirtual();          // Ignore system-generated virtual inputs
-}
-    
-       
-   private boolean isGamepadConnected() {
-    int[] deviceIds = InputDevice.getDeviceIds();
-    for (int id : deviceIds) {
-        InputDevice device = InputDevice.getDevice(id);
-        if (device == null) continue;
-        if (isIgnoredDevice(device)) continue;
-
-        if ((device.getSources() & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD ||
-            (device.getSources() & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK) {
-            return true;
-        }
-    }
-    return false;
-}
-    
-public boolean isWineRunning() {
-    try {
-        // Fully qualify java.lang.Process to avoid conflict with android.os.Process
-        java.lang.Process process = Runtime.getRuntime().exec("pgrep -f winhandler.exe");
-        return process.waitFor() == 0;
-    } catch (Exception e) {
-        return false;
-    }
-}
-
-
-/// DRAWER
-
-    private void setupTermuxActivityListener() {
-    this.termuxActivityListener = new TermuxActivityListener() {
+    private ServiceConnection hudConnection = new ServiceConnection() {
         @Override
-        public void onX11PreferenceSwitchChange(boolean isOpen) {
-            // Handle preference switch change
-            if (isOpen) {
-                // Open preferences
-                startActivity(new Intent(MainActivity.this, LoriePreferences.class));
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            HudService.LocalBinder binder = (HudService.LocalBinder) service;
+            hudService = binder.getService();
+            // If activity is resumed, attach immediately
+            if (isResumed) {
+                hudService.attachToActivity(MainActivity.this);
             }
+            isBound = true;
         }
 
         @Override
-        public void releaseSlider(boolean open) {
-            // For MainActivity, we don't have a slider UI
-            Log.d("MainActivity", "Slider released: " + open);
-        }
-
-        @Override
-        public void onChangeOrientation(int orientation) {
-            // Set orientation for MainActivity
-            setRequestedOrientation(orientation);
-            
-            // Also update the LorieView if connected
-            if (getLorieView() != null) {
-                getLorieView().regenerate();
-            }
-        }
-
-        @Override
-        public void reInstallX11StartScript(Activity activity) {
-            // Use intent to communicate with Termux app
-            Intent intent = new Intent();
-            intent.setAction("com.termux.action.INSTALL_X11");
-            intent.setPackage("com.xodos");
-            try {
-                activity.startActivity(intent);
-            } catch (Exception e) {
-                Log.e("MainActivity", "Failed to launch Termux installer", e);
-                Toast.makeText(activity, "Please install Termux app first", Toast.LENGTH_LONG).show();
-            }
-        }
-
-        @Override
-        public void stopDesktop() {
-            // Disconnect X11 connection
-            if (LorieView.connected()) {
-                // Check what method LorieView has for disconnecting optional 
-                // If there's no disconnect method, we'll just update the UI
-            }
-            
-            // Update UI to show disconnected state
-            clientConnectedStateChanged();
-            
-            // Show toast
-            Toast.makeText(MainActivity.this, "Desktop stopped", Toast.LENGTH_SHORT).show();
-        }
-
-        @Override
-        public void openSoftwareKeyboard() {
-            // Toggle keyboard visibility
-            MainActivity.toggleKeyboardVisibility(MainActivity.this);
-        }
-
-        @Override
-        public void showProcessManager() {
-            // Show process manager dialog from MainActivity
-            showProcessManagerDialog();
-        }
-
-        @Override
-        public void changePreference(String key) {
-            // Handle preference change in MainActivity
-            onPreferencesChanged(key);
-        }
-
-        @Override
-        public List<ProcessInfo> collectProcessorInfo(String tag) {
-            // Return real Android process list instead of empty placeholder
-            return getAndroidProcessList();
-        }
-
-       
-
-        @Override
-        public void onExitApp() {
-            // Exit the app
-          //  System.exit(0);
-         finish();
-       //     finishAffinity();
+        public void onServiceDisconnected(ComponentName name) {
+            isBound = false;
+            hudService = null;
         }
     };
- }
+
+    private boolean isResumed = false;
+
+    // Call this when the HUD preference is enabled
+    public void startHudService() {
+        Intent intent = new Intent(this, HudService.class);
+        
+            startService(intent);
+        
+        bindService(intent, hudConnection, Context.BIND_AUTO_CREATE);
+    }
+
+    // Call this when the HUD preference is disabled
+    public void stopHudService() {
+        if (isBound) {
+            unbindService(hudConnection);
+            isBound = false;
+        }
+        Intent intent = new Intent(this, HudService.class);
+        stopService(intent);
+    }
+
+    // Called from onStart to start HUD if preference is enabled
+    private void startHudIfEnabled() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        boolean hudEnabled = prefs.getBoolean("hud_enabled", false);
+        if (hudEnabled) {
+            startHudService();
+        }
+    }
+
+
+     //////////// gamepad 
+    private void checkConnectedControllers() {
+        int[] deviceIds = InputDevice.getDeviceIds();
+        for (int id : deviceIds) {
+            InputDevice device = InputDevice.getDevice(id);
+            if ((device.getSources() & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD
+                && !isIgnoredDevice(device)) {
+                
+                String msg = "Controller:\uD83C\uDFAE " + device.getName() + " (ID:" + id + ")";
+                Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+                Log.d("ControllerDebug", msg);
+            }
+        }
+    }
+
+
+     /// check fingerprint sensors that acts like gamepad
+     private boolean isIgnoredDevice(InputDevice device) {
+        if (device == null) return true;
+
+        String name = device.getName().toLowerCase();
+
+        // Ignore fingerprint or virtual devices that masquerade as gamepads
+        return name.contains("uinput-fpc") ||
+               name.contains("fingerprint") ||
+               name.contains("fpc1020") ||   // common FPC models
+               name.contains("goodix")   ||  // Goodix sensors
+               device.isVirtual();          // Ignore system-generated virtual inputs
+    }
+        
+       
+       private boolean isGamepadConnected() {
+        int[] deviceIds = InputDevice.getDeviceIds();
+        for (int id : deviceIds) {
+            InputDevice device = InputDevice.getDevice(id);
+            if (device == null) continue;
+            if (isIgnoredDevice(device)) continue;
+
+            if ((device.getSources() & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD ||
+                (device.getSources() & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK) {
+                return true;
+            }
+        }
+        return false;
+    }
+        
+    public boolean isWineRunning() {
+        try {
+            // Fully qualify java.lang.Process to avoid conflict with android.os.Process
+            java.lang.Process process = Runtime.getRuntime().exec("pgrep -f winhandler.exe");
+            return process.waitFor() == 0;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+
+    /// DRAWER
+
+    private void setupTermuxActivityListener() {
+        this.termuxActivityListener = new TermuxActivityListener() {
+            @Override
+            public void onX11PreferenceSwitchChange(boolean isOpen) {
+                // Handle preference switch change
+                if (isOpen) {
+                    // Open preferences
+                    startActivity(new Intent(MainActivity.this, LoriePreferences.class));
+                }
+            }
+
+            @Override
+            public void releaseSlider(boolean open) {
+                // For MainActivity, we don't have a slider UI
+                Log.d("MainActivity", "Slider released: " + open);
+            }
+
+            @Override
+            public void onChangeOrientation(int orientation) {
+                // Set orientation for MainActivity
+                setRequestedOrientation(orientation);
+                
+                // Also update the LorieView if connected
+                if (getLorieView() != null) {
+                    getLorieView().regenerate();
+                }
+            }
+
+            @Override
+            public void reInstallX11StartScript(Activity activity) {
+                // Use intent to communicate with Termux app
+                Intent intent = new Intent();
+                intent.setAction("com.termux.action.INSTALL_X11");
+                intent.setPackage("com.xodos");
+                try {
+                    activity.startActivity(intent);
+                } catch (Exception e) {
+                    Log.e("MainActivity", "Failed to launch Termux installer", e);
+                    Toast.makeText(activity, "Please install Termux app first", Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
+            public void stopDesktop() {
+                // Disconnect X11 connection
+                if (LorieView.connected()) {
+                    // Check what method LorieView has for disconnecting optional 
+                    // If there's no disconnect method, we'll just update the UI
+                }
+                
+                // Update UI to show disconnected state
+                clientConnectedStateChanged();
+                
+                // Show toast
+                Toast.makeText(MainActivity.this, "Desktop stopped", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void openSoftwareKeyboard() {
+                // Toggle keyboard visibility
+                MainActivity.toggleKeyboardVisibility(MainActivity.this);
+            }
+
+            @Override
+            public void showProcessManager() {
+                // Show process manager dialog from MainActivity
+                showProcessManagerDialog();
+            }
+
+            @Override
+            public void changePreference(String key) {
+                // Handle preference change in MainActivity
+                onPreferencesChanged(key);
+            }
+
+            @Override
+            public List<ProcessInfo> collectProcessorInfo(String tag) {
+                // Return real Android process list instead of empty placeholder
+                return getAndroidProcessList();
+            }
+
+           
+
+            @Override
+            public void onExitApp() {
+                // Exit the app
+              //  System.exit(0);
+             finish();
+           //     finishAffinity();
+            }
+        }; // terminate anonymous TermuxActivityListener assignment
+    }   // close setupTermuxActivityListener()
+}   // close MainActivity class
