@@ -75,9 +75,10 @@ fun CustomDriversDialog(
                 }
                 // Only suggest Vulkan/OpenGL if user hasn't explicitly chosen OpenGL or Both
                 if (driverTypeInput != "OpenGL" && driverTypeInput != "Both") {
-                    if (displayName.endsWith(".json", ignoreCase = true) || displayName.contains("turnip", ignoreCase = true) || displayName.contains("freedreno", ignoreCase = true) || displayName.contains("vulkan", ignoreCase = true)) {
+                    val lower = displayName.lowercase()
+                    if (lower.endsWith(".json") || lower.contains("turnip") || lower.contains("freedreno") || lower.contains("vulkan") || lower.contains("mali") || lower.contains("compat") || lower.contains("panvk") || lower.contains("panfrost") || lower.contains("vkd3d") || lower.contains("leegao")) {
                         driverTypeInput = "Vulkan"
-                    } else if (displayName.endsWith(".so", ignoreCase = true) || displayName.contains("mesa", ignoreCase = true) || displayName.contains("gallium", ignoreCase = true)) {
+                    } else if (lower.endsWith(".so") || lower.contains("mesa") || lower.contains("gallium")) {
                         driverTypeInput = "OpenGL"
                     }
                 }
