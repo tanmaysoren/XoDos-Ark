@@ -316,22 +316,66 @@ val payload = buildString {
                 b.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/freedreno_icd.aarch64.json\n")
                 b.append("export TU_DEBUG=noconform\n")
             }
+            "PANVK", "PANFROST" -> {
+                b.append("export VKD3D_FEATURE_LEVEL=12_0\n")
+                b.append("export MESA_VK_WSI_PRESENT_MODE=fifo\n")
+                b.append("export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/panfrost_icd.aarch64.json\n")
+                b.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/panfrost_icd.aarch64.json\n")
+                b.append("export PAN_MESA_DEBUG=sync\n")
+                b.append("export MALI_COMPAT=1\n")
+            }
+            "MALI_COMPAT", "COMPAT_LAYER" -> {
+                b.append("export VKD3D_FEATURE_LEVEL=12_0\n")
+                b.append("export VKD3D_CONFIG=dxr,dxr11,single_queue\n")
+                b.append("export MESA_VK_WSI_PRESENT_MODE=fifo\n")
+                b.append("export MALI_COMPAT=1\n")
+                b.append("export VKD3D_DISABLE_EXTENSIONS=VK_KHR_present_id,VK_KHR_present_wait\n")
+                val customVkPath = AppPrefs.getCustomDriverFilePath(prefs, vulkanMode)
+                if (!customVkPath.isNullOrBlank()) {
+                    b.append("export VK_ICD_FILENAMES=\"$customVkPath\"\n")
+                    b.append("export VK_DRIVER_FILES=\"$customVkPath\"\n")
+                    if (customVkPath.endsWith(".so", ignoreCase = true)) {
+                        b.append("export LD_PRELOAD=\"$customVkPath:\$LD_PRELOAD\"\n")
+                        b.append("export VKD3D_COMPAT_LAYER=\"$customVkPath\"\n")
+                    }
+                } else {
+                    b.append("export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/panfrost_icd.aarch64.json\n")
+                    b.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/panfrost_icd.aarch64.json\n")
+                }
+            }
             "LLVMPIPE" -> {
                 b.append("unset VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE VK_DRIVER_FILES VN_DEBUG || true\n")
                 b.append("export VK_ICD_FILENAMES=/dev/null\n")
             }
             else -> {
                 val customVkPath = AppPrefs.getCustomDriverFilePath(prefs, vulkanMode)
+                val vkLower = vulkanMode.lowercase()
+                val isMaliOrCompat = vkLower.contains("mali") || vkLower.contains("compat") || vkLower.contains("panvk") || vkLower.contains("panfrost") || vkLower.contains("leegao") || vkLower.contains("vkd3d")
                 if (!customVkPath.isNullOrBlank()) {
                     b.append("export VK_ICD_FILENAMES=\"$customVkPath\"\n")
                     b.append("export VK_DRIVER_FILES=\"$customVkPath\"\n")
-                    if (customVkPath.endsWith(".so")) {
+                    if (customVkPath.endsWith(".so", ignoreCase = true)) {
                         b.append("export LD_PRELOAD=\"$customVkPath:\$LD_PRELOAD\"\n")
+                        if (isMaliOrCompat) {
+                            b.append("export VKD3D_COMPAT_LAYER=\"$customVkPath\"\n")
+                        }
                     }
                     b.append("export VKD3D_FEATURE_LEVEL=12_0\n")
-                    b.append("export TU_DEBUG=noconform\n")
+                    if (isMaliOrCompat || isMtkOrMali) {
+                        b.append("export MALI_COMPAT=1\n")
+                        b.append("export VKD3D_CONFIG=single_queue\n")
+                        b.append("export MESA_VK_WSI_PRESENT_MODE=fifo\n")
+                    } else {
+                        b.append("export TU_DEBUG=noconform\n")
+                    }
+                } else if (isMaliOrCompat) {
+                    b.append("export VKD3D_FEATURE_LEVEL=12_0\n")
+                    b.append("export VKD3D_CONFIG=single_queue\n")
+                    b.append("export MESA_VK_WSI_PRESENT_MODE=fifo\n")
+                    b.append("export MALI_COMPAT=1\n")
+                    b.append("export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/panfrost_icd.aarch64.json\n")
+                    b.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/panfrost_icd.aarch64.json\n")
                 } else {
-                    val vkLower = vulkanMode.lowercase()
                     b.append("export VK_ICD_FILENAMES=\"/usr/share/vulkan/icd.d/${vkLower}_icd.aarch64.json\"\n")
                     b.append("export VK_DRIVER_FILES=\"/usr/share/vulkan/icd.d/${vkLower}_icd.aarch64.json\"\n")
                 }
@@ -434,22 +478,66 @@ val payload = buildString {
                 sb.append("export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/freedreno_icd.aarch64.json\n")
                 sb.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/freedreno_icd.aarch64.json\n")
             }
+            "PANVK", "PANFROST" -> {
+                sb.append("export VKD3D_FEATURE_LEVEL=12_0\n")
+                sb.append("export MESA_VK_WSI_PRESENT_MODE=fifo\n")
+                sb.append("export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/panfrost_icd.aarch64.json\n")
+                sb.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/panfrost_icd.aarch64.json\n")
+                sb.append("export PAN_MESA_DEBUG=sync\n")
+                sb.append("export MALI_COMPAT=1\n")
+            }
+            "MALI_COMPAT", "COMPAT_LAYER" -> {
+                sb.append("export VKD3D_FEATURE_LEVEL=12_0\n")
+                sb.append("export VKD3D_CONFIG=dxr,dxr11,single_queue\n")
+                sb.append("export MESA_VK_WSI_PRESENT_MODE=fifo\n")
+                sb.append("export MALI_COMPAT=1\n")
+                sb.append("export VKD3D_DISABLE_EXTENSIONS=VK_KHR_present_id,VK_KHR_present_wait\n")
+                val customVkPath = AppPrefs.getCustomDriverFilePath(prefs, vulkan)
+                if (!customVkPath.isNullOrBlank()) {
+                    sb.append("export VK_ICD_FILENAMES=\"$customVkPath\"\n")
+                    sb.append("export VK_DRIVER_FILES=\"$customVkPath\"\n")
+                    if (customVkPath.endsWith(".so", ignoreCase = true)) {
+                        sb.append("export LD_PRELOAD=\"$customVkPath:\$LD_PRELOAD\"\n")
+                        sb.append("export VKD3D_COMPAT_LAYER=\"$customVkPath\"\n")
+                    }
+                } else {
+                    sb.append("export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/panfrost_icd.aarch64.json\n")
+                    sb.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/panfrost_icd.aarch64.json\n")
+                }
+            }
             "LLVMPIPE" -> {
                 sb.append("unset VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE VK_DRIVER_FILES VN_DEBUG || true\n")
                 sb.append("export VK_ICD_FILENAMES=/dev/null\n")
             }
             else -> {
                 val customVkPath = AppPrefs.getCustomDriverFilePath(prefs, vulkan)
+                val vkLower = vulkan.lowercase()
+                val isMaliOrCompat = vkLower.contains("mali") || vkLower.contains("compat") || vkLower.contains("panvk") || vkLower.contains("panfrost") || vkLower.contains("leegao") || vkLower.contains("vkd3d")
                 if (!customVkPath.isNullOrBlank()) {
                     sb.append("export VK_ICD_FILENAMES=\"$customVkPath\"\n")
                     sb.append("export VK_DRIVER_FILES=\"$customVkPath\"\n")
-                    if (customVkPath.endsWith(".so")) {
+                    if (customVkPath.endsWith(".so", ignoreCase = true)) {
                         sb.append("export LD_PRELOAD=\"$customVkPath:\$LD_PRELOAD\"\n")
+                        if (isMaliOrCompat) {
+                            sb.append("export VKD3D_COMPAT_LAYER=\"$customVkPath\"\n")
+                        }
                     }
                     sb.append("export VKD3D_FEATURE_LEVEL=12_0\n")
-                    sb.append("export TU_DEBUG=noconform\n")
+                    if (isMaliOrCompat || isMtkOrMali) {
+                        sb.append("export MALI_COMPAT=1\n")
+                        sb.append("export VKD3D_CONFIG=single_queue\n")
+                        sb.append("export MESA_VK_WSI_PRESENT_MODE=fifo\n")
+                    } else {
+                        sb.append("export TU_DEBUG=noconform\n")
+                    }
+                } else if (isMaliOrCompat) {
+                    sb.append("export VKD3D_FEATURE_LEVEL=12_0\n")
+                    sb.append("export VKD3D_CONFIG=single_queue\n")
+                    sb.append("export MESA_VK_WSI_PRESENT_MODE=fifo\n")
+                    sb.append("export MALI_COMPAT=1\n")
+                    sb.append("export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/panfrost_icd.aarch64.json\n")
+                    sb.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/panfrost_icd.aarch64.json\n")
                 } else {
-                    val vkLower = vulkan.lowercase()
                     sb.append("export VK_ICD_FILENAMES=\"/usr/share/vulkan/icd.d/${vkLower}_icd.aarch64.json\"\n")
                     sb.append("export VK_DRIVER_FILES=\"/usr/share/vulkan/icd.d/${vkLower}_icd.aarch64.json\"\n")
                 }
