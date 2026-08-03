@@ -29,7 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.xodos2.ui.glass.glassBlurModifier
-import app.xodos2.ui.glass.glassDialogStyle
+import app.xodos2.ui.glassDialogStyle
 import app.xodos2.ui.glass.GlassButton
 import app.xodos2.ui.prefs.AppPrefs
 import app.xodos2.ui.prefs.AppPrefs.CustomDriverInfo
@@ -75,10 +75,9 @@ fun CustomDriversDialog(
                 }
                 // Only suggest Vulkan/OpenGL if user hasn't explicitly chosen OpenGL or Both
                 if (driverTypeInput != "OpenGL" && driverTypeInput != "Both") {
-                    val lower = displayName.lowercase()
-                    if (lower.endsWith(".json") || lower.contains("turnip") || lower.contains("freedreno") || lower.contains("vulkan") || lower.contains("mali") || lower.contains("compat") || lower.contains("panvk") || lower.contains("panfrost") || lower.contains("vkd3d") || lower.contains("leegao")) {
+                    if (displayName.endsWith(".json", ignoreCase = true) || displayName.contains("turnip", ignoreCase = true) || displayName.contains("freedreno", ignoreCase = true) || displayName.contains("vulkan", ignoreCase = true)) {
                         driverTypeInput = "Vulkan"
-                    } else if (lower.endsWith(".so") || lower.contains("mesa") || lower.contains("gallium")) {
+                    } else if (displayName.endsWith(".so", ignoreCase = true) || displayName.contains("mesa", ignoreCase = true) || displayName.contains("gallium", ignoreCase = true)) {
                         driverTypeInput = "OpenGL"
                     }
                 }

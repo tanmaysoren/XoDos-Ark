@@ -51,7 +51,7 @@ object DesktopDetector {
         // Common preamble for most desktops
         val commonSetup = """
         # Common environment
-        if [ -f /etc/profile.d/xodos_graphics.sh ]; then
+                if [ -f /etc/profile.d/xodos_graphics.sh ]; then
             . /etc/profile.d/xodos_graphics.sh
         fi
         if [ -f /.x11 ]; then

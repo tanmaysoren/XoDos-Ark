@@ -29,6 +29,7 @@ import app.xodos2.ui.runtime.NativeInstallCoordinator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
+
 @Composable
 fun DebianDrawerPage(
     debianX11ScriptEditorOpen: Boolean,

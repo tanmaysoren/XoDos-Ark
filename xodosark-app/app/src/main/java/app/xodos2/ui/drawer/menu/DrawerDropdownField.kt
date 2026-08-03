@@ -30,8 +30,12 @@ fun DrawerDropdownField(
     onSelect: (String) -> Unit,
     modifier: Modifier = Modifier,
     customOptions: List<String> = emptyList(),
+    onAddCustomOption: ((String) -> Unit)? = null,
+    onDeleteCustomOption: ((String) -> Unit)? = null,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    var showAddDialog by remember { mutableStateOf(false) }
+    var customDriverInput by remember { mutableStateOf("") }
 
     Column(modifier = modifier.fillMaxWidth().padding(vertical = 6.dp, horizontal = 16.dp)) {
         Box(
@@ -56,7 +60,6 @@ fun DrawerDropdownField(
                     ),
                     shape = RoundedCornerShape(12.dp)
                 )
-                .clickable { expanded = true }
                 .padding(horizontal = 16.dp, vertical = 10.dp)
         ) {
             Row(
@@ -64,7 +67,9 @@ fun DrawerDropdownField(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { expanded = true }
                 ) {
                     Text(
                         text = label,
@@ -83,11 +88,28 @@ fun DrawerDropdownField(
                     )
                 }
 
+                if (onAddCustomOption != null) {
+                    IconButton(
+                        onClick = { showAddDialog = true },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Add,
+                            contentDescription = "Add custom $label driver",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(Modifier.width(4.dp))
+                }
+
                 Icon(
                     imageVector = Icons.Rounded.KeyboardArrowDown,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier
+                        .size(20.dp)
+                        .clickable { expanded = true }
                 )
             }
         }
@@ -128,12 +150,27 @@ fun DrawerDropdownField(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = if (isCustom) "$opt (Custom)" else opt,
+                                text = opt,
                                 color = if (isCustom) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = if (opt == value) FontWeight.Bold else FontWeight.Normal,
                                 modifier = Modifier.weight(1f)
                             )
+                            if (isCustom && onDeleteCustomOption != null) {
+                                IconButton(
+                                    onClick = {
+                                        onDeleteCustomOption(opt)
+                                    },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Delete,
+                                        contentDescription = "Delete custom driver $opt",
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
                         }
                     },
                     onClick = {
@@ -142,6 +179,91 @@ fun DrawerDropdownField(
                     }
                 )
             }
+
+            if (onAddCustomOption != null) {
+                HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+                DropdownMenuItem(
+                    text = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Rounded.Add,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = "+ Add Custom Driver",
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    },
+                    onClick = {
+                        expanded = false
+                        showAddDialog = true
+                    }
+                )
+            }
         }
+    }
+
+    if (showAddDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showAddDialog = false
+                customDriverInput = ""
+            },
+            title = {
+                Text(
+                    text = "Add Custom $label Driver",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Enter custom $label driver name (e.g., PANFROST, LIMA, CUSTOM_DRIVER):",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = customDriverInput,
+                        onValueChange = { customDriverInput = it },
+                        singleLine = true,
+                        placeholder = { Text("Driver name") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val name = customDriverInput.trim().uppercase()
+                        if (name.isNotBlank()) {
+                            onAddCustomOption?.invoke(name)
+                        }
+                        showAddDialog = false
+                        customDriverInput = ""
+                    },
+                    enabled = customDriverInput.trim().isNotBlank()
+                ) {
+                    Text("Add", color = MaterialTheme.colorScheme.primary)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showAddDialog = false
+                        customDriverInput = ""
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }

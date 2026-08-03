@@ -1,0 +1,55 @@
+cat << 'EOF' > ~/.termux/termux.properties
+allow-external-apps = true
+terminal-cursor-blink-rate=600
+
+extra-keys = [ \
+  [ \
+    {"macro": "history | fzf", "display": "FZF-H"}, \
+    {"macro": "fzf", "display": "FZF-F"}, \
+    {"macro": "cd '$(find . -type d | fzf)'\n", "display": "FZF-D"}, \
+    {"key": "ranger", "display": "📁"}, \
+    {"key": "nvim", "display": "📝"}, \
+    "UP", \
+    {"macro": "yai\n", "display": "🤖"} \
+  ], \
+  [ \
+    "ESC", "CTRL", "ALT", \
+    {"key": "TAB", "display": " ↹ "}, \
+    "LEFT", "DOWN", "RIGHT" \
+  ] \
+]
+EOF
+
+termux-reload-settings
+
+
+
+
+
+
+
+Also
+
+
+
+
+allow-external-apps = true
+terminal-cursor-blink-rate = 600
+
+extra-keys = [ \
+  [ \
+    {"macro": "~/tuios-omni.sh\n", "display": "❖ Start"}, \
+    {"macro": "~/tuios-omni.sh --ai\n", "display": "AI"}, \
+    {"macro": "~/tuios-omni.sh --sec\n", "display": "SEC"}, \
+    {"key": "ranger", "display": "📁"}, \
+    {"key": "nvim", "display": "📝"}, \
+    "UP", \
+    {"macro": "yai\n", "display": "🤖"}, {"macro": "CTRL g", "display": "🪄"}   \
+  ], \
+  [ \
+    "ESC", "CTRL", "ALT", \
+    {"key": "TAB", "display": " ↹ "}, \
+    "LEFT", "DOWN", "RIGHT" \
+  ] \
+]
+allow-external-apps = true

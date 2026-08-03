@@ -266,32 +266,23 @@ val payload = buildString {
                 b.append("export LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu/gl4es:\$LD_LIBRARY_PATH\n")
             }
             "LLVMPIPE" -> {
-                b.append("unset MESA_GL_VERSION_OVERRIDE LIBGL_FB VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VK_DRIVER_FILES VN_DEBUG ZINK_DESCRIPTORS ZINK_CONTEXT_THREADED ZINK_DEBUG || true\n")             
+                b.append("unset MESA_GL_VERSION_OVERRIDE LIBGL_FB VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VK_DRIVER_FILES VN_DEBUG || true\n")             
                 b.append("export GALLIUM_DRIVER=llvmpipe\n")
                 b.append("export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe\n")
                 b.append("export LIBGL_ALWAYS_SOFTWARE=1\n")
-                b.append("export VK_ICD_FILENAMES=/dev/null\n")
             }
             else -> {
                 val customPath = AppPrefs.getCustomDriverFilePath(prefs, openGLMode)
                 val driverLower = openGLMode.lowercase()
-                b.append("unset MESA_GL_VERSION_OVERRIDE LIBGL_FB MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VN_DEBUG ZINK_DESCRIPTORS ZINK_CONTEXT_THREADED ZINK_DEBUG || true\n")             
-                b.append("export GALLIUM_DRIVER=\"$driverLower\"\n")
-                b.append("export MESA_LOADER_DRIVER_OVERRIDE=\"$driverLower\"\n")
+                b.append("unset MESA_GL_VERSION_OVERRIDE LIBGL_FB VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VK_DRIVER_FILES VN_DEBUG || true\n")             
+                b.append("export GALLIUM_DRIVER=$driverLower\n")
+                b.append("export MESA_LOADER_DRIVER_OVERRIDE=$driverLower\n")
                 b.append("export LIBGL_ALWAYS_SOFTWARE=0\n")
                 if (!customPath.isNullOrBlank()) {
                     val dir = File(customPath).parent
-                    if (customPath.endsWith(".json", ignoreCase = true)) {
-                        b.append("export VK_ICD_FILENAMES=\"$customPath\"\n")
-                        b.append("export VK_DRIVER_FILES=\"$customPath\"\n")
-                        b.append("export VKD3D_FEATURE_LEVEL=12_0\n")
-                    } else if (customPath.endsWith(".so", ignoreCase = true)) {
-                        b.append("export LD_PRELOAD=\"$customPath:\$LD_PRELOAD\"\n")
-                    }
                     if (!dir.isNullOrBlank()) {
-                        b.append("export LD_LIBRARY_PATH=\"$dir:\$LD_LIBRARY_PATH\"\n")
-                        b.append("export MESA_DRIVER_PATH=\"$dir\"\n")
-                        b.append("export LIBGL_DRIVERS_PATH=\"$dir\"\n")
+                        b.append("export LD_LIBRARY_PATH=$dir:\$LD_LIBRARY_PATH\n")
+                        b.append("export MESA_DRIVER_PATH=$dir\n")
                     }
                 }
             }
@@ -316,68 +307,24 @@ val payload = buildString {
                 b.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/freedreno_icd.aarch64.json\n")
                 b.append("export TU_DEBUG=noconform\n")
             }
-            "PANVK", "PANFROST" -> {
-                b.append("export VKD3D_FEATURE_LEVEL=12_0\n")
-                b.append("export MESA_VK_WSI_PRESENT_MODE=fifo\n")
-                b.append("export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/panfrost_icd.aarch64.json\n")
-                b.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/panfrost_icd.aarch64.json\n")
-                b.append("export PAN_MESA_DEBUG=sync\n")
-                b.append("export MALI_COMPAT=1\n")
-            }
-            "MALI_COMPAT", "COMPAT_LAYER" -> {
-                b.append("export VKD3D_FEATURE_LEVEL=12_0\n")
-                b.append("export VKD3D_CONFIG=dxr,dxr11,single_queue\n")
-                b.append("export MESA_VK_WSI_PRESENT_MODE=fifo\n")
-                b.append("export MALI_COMPAT=1\n")
-                b.append("export VKD3D_DISABLE_EXTENSIONS=VK_KHR_present_id,VK_KHR_present_wait\n")
-                val customVkPath = AppPrefs.getCustomDriverFilePath(prefs, vulkanMode)
-                if (!customVkPath.isNullOrBlank()) {
-                    b.append("export VK_ICD_FILENAMES=\"$customVkPath\"\n")
-                    b.append("export VK_DRIVER_FILES=\"$customVkPath\"\n")
-                    if (customVkPath.endsWith(".so", ignoreCase = true)) {
-                        b.append("export LD_PRELOAD=\"$customVkPath:\$LD_PRELOAD\"\n")
-                        b.append("export VKD3D_COMPAT_LAYER=\"$customVkPath\"\n")
-                    }
-                } else {
-                    b.append("export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/panfrost_icd.aarch64.json\n")
-                    b.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/panfrost_icd.aarch64.json\n")
-                }
-            }
             "LLVMPIPE" -> {
                 b.append("unset VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE VK_DRIVER_FILES VN_DEBUG || true\n")
                 b.append("export VK_ICD_FILENAMES=/dev/null\n")
             }
             else -> {
                 val customVkPath = AppPrefs.getCustomDriverFilePath(prefs, vulkanMode)
-                val vkLower = vulkanMode.lowercase()
-                val isMaliOrCompat = vkLower.contains("mali") || vkLower.contains("compat") || vkLower.contains("panvk") || vkLower.contains("panfrost") || vkLower.contains("leegao") || vkLower.contains("vkd3d")
                 if (!customVkPath.isNullOrBlank()) {
-                    b.append("export VK_ICD_FILENAMES=\"$customVkPath\"\n")
-                    b.append("export VK_DRIVER_FILES=\"$customVkPath\"\n")
-                    if (customVkPath.endsWith(".so", ignoreCase = true)) {
-                        b.append("export LD_PRELOAD=\"$customVkPath:\$LD_PRELOAD\"\n")
-                        if (isMaliOrCompat) {
-                            b.append("export VKD3D_COMPAT_LAYER=\"$customVkPath\"\n")
-                        }
+                    b.append("export VK_ICD_FILENAMES=$customVkPath\n")
+                    b.append("export VK_DRIVER_FILES=$customVkPath\n")
+                    if (customVkPath.endsWith(".so")) {
+                        b.append("export LD_PRELOAD=$customVkPath:\$LD_PRELOAD\n")
                     }
                     b.append("export VKD3D_FEATURE_LEVEL=12_0\n")
-                    if (isMaliOrCompat || isMtkOrMali) {
-                        b.append("export MALI_COMPAT=1\n")
-                        b.append("export VKD3D_CONFIG=single_queue\n")
-                        b.append("export MESA_VK_WSI_PRESENT_MODE=fifo\n")
-                    } else {
-                        b.append("export TU_DEBUG=noconform\n")
-                    }
-                } else if (isMaliOrCompat) {
-                    b.append("export VKD3D_FEATURE_LEVEL=12_0\n")
-                    b.append("export VKD3D_CONFIG=single_queue\n")
-                    b.append("export MESA_VK_WSI_PRESENT_MODE=fifo\n")
-                    b.append("export MALI_COMPAT=1\n")
-                    b.append("export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/panfrost_icd.aarch64.json\n")
-                    b.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/panfrost_icd.aarch64.json\n")
+                    b.append("export TU_DEBUG=noconform\n")
                 } else {
-                    b.append("export VK_ICD_FILENAMES=\"/usr/share/vulkan/icd.d/${vkLower}_icd.aarch64.json\"\n")
-                    b.append("export VK_DRIVER_FILES=\"/usr/share/vulkan/icd.d/${vkLower}_icd.aarch64.json\"\n")
+                    val vkLower = vulkanMode.lowercase()
+                    b.append("export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/${vkLower}_icd.aarch64.json\n")
+                    b.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/${vkLower}_icd.aarch64.json\n")
                 }
             }
         }
@@ -428,32 +375,23 @@ val payload = buildString {
                 sb.append("export LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu/gl4es:\$LD_LIBRARY_PATH\n")
             }
             "LLVMPIPE" -> {
-                sb.append("unset MESA_GL_VERSION_OVERRIDE LIBGL_FB VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VK_DRIVER_FILES VN_DEBUG ZINK_DESCRIPTORS ZINK_CONTEXT_THREADED ZINK_DEBUG || true\n")
+                sb.append("unset MESA_GL_VERSION_OVERRIDE LIBGL_FB VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VK_DRIVER_FILES VN_DEBUG || true\n")
                 sb.append("export GALLIUM_DRIVER=llvmpipe\n")
                 sb.append("export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe\n")
                 sb.append("export LIBGL_ALWAYS_SOFTWARE=1\n")
-                sb.append("export VK_ICD_FILENAMES=/dev/null\n")
             }
             else -> {
                 val customPath = AppPrefs.getCustomDriverFilePath(prefs, openGL)
                 val driverLower = openGL.lowercase()
-                sb.append("unset MESA_GL_VERSION_OVERRIDE LIBGL_FB MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VN_DEBUG ZINK_DESCRIPTORS ZINK_CONTEXT_THREADED ZINK_DEBUG || true\n")
-                sb.append("export GALLIUM_DRIVER=\"$driverLower\"\n")
-                sb.append("export MESA_LOADER_DRIVER_OVERRIDE=\"$driverLower\"\n")
+                sb.append("unset MESA_GL_VERSION_OVERRIDE LIBGL_FB VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE MESA_LOADER_DRIVER_OVERRIDE VKD3D_FEATURE_LEVEL VK_DRIVER_FILES VN_DEBUG || true\n")
+                sb.append("export GALLIUM_DRIVER=$driverLower\n")
+                sb.append("export MESA_LOADER_DRIVER_OVERRIDE=$driverLower\n")
                 sb.append("export LIBGL_ALWAYS_SOFTWARE=0\n")
                 if (!customPath.isNullOrBlank()) {
                     val dir = File(customPath).parent
-                    if (customPath.endsWith(".json", ignoreCase = true)) {
-                        sb.append("export VK_ICD_FILENAMES=\"$customPath\"\n")
-                        sb.append("export VK_DRIVER_FILES=\"$customPath\"\n")
-                        sb.append("export VKD3D_FEATURE_LEVEL=12_0\n")
-                    } else if (customPath.endsWith(".so", ignoreCase = true)) {
-                        sb.append("export LD_PRELOAD=\"$customPath:\$LD_PRELOAD\"\n")
-                    }
                     if (!dir.isNullOrBlank()) {
-                        sb.append("export LD_LIBRARY_PATH=\"$dir:\$LD_LIBRARY_PATH\"\n")
-                        sb.append("export MESA_DRIVER_PATH=\"$dir\"\n")
-                        sb.append("export LIBGL_DRIVERS_PATH=\"$dir\"\n")
+                        sb.append("export LD_LIBRARY_PATH=$dir:\$LD_LIBRARY_PATH\n")
+                        sb.append("export MESA_DRIVER_PATH=$dir\n")
                     }
                 }
             }
@@ -478,68 +416,24 @@ val payload = buildString {
                 sb.append("export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/freedreno_icd.aarch64.json\n")
                 sb.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/freedreno_icd.aarch64.json\n")
             }
-            "PANVK", "PANFROST" -> {
-                sb.append("export VKD3D_FEATURE_LEVEL=12_0\n")
-                sb.append("export MESA_VK_WSI_PRESENT_MODE=fifo\n")
-                sb.append("export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/panfrost_icd.aarch64.json\n")
-                sb.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/panfrost_icd.aarch64.json\n")
-                sb.append("export PAN_MESA_DEBUG=sync\n")
-                sb.append("export MALI_COMPAT=1\n")
-            }
-            "MALI_COMPAT", "COMPAT_LAYER" -> {
-                sb.append("export VKD3D_FEATURE_LEVEL=12_0\n")
-                sb.append("export VKD3D_CONFIG=dxr,dxr11,single_queue\n")
-                sb.append("export MESA_VK_WSI_PRESENT_MODE=fifo\n")
-                sb.append("export MALI_COMPAT=1\n")
-                sb.append("export VKD3D_DISABLE_EXTENSIONS=VK_KHR_present_id,VK_KHR_present_wait\n")
-                val customVkPath = AppPrefs.getCustomDriverFilePath(prefs, vulkan)
-                if (!customVkPath.isNullOrBlank()) {
-                    sb.append("export VK_ICD_FILENAMES=\"$customVkPath\"\n")
-                    sb.append("export VK_DRIVER_FILES=\"$customVkPath\"\n")
-                    if (customVkPath.endsWith(".so", ignoreCase = true)) {
-                        sb.append("export LD_PRELOAD=\"$customVkPath:\$LD_PRELOAD\"\n")
-                        sb.append("export VKD3D_COMPAT_LAYER=\"$customVkPath\"\n")
-                    }
-                } else {
-                    sb.append("export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/panfrost_icd.aarch64.json\n")
-                    sb.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/panfrost_icd.aarch64.json\n")
-                }
-            }
             "LLVMPIPE" -> {
                 sb.append("unset VK_ICD_FILENAMES MESA_VK_WSI_PRESENT_MODE VK_DRIVER_FILES VN_DEBUG || true\n")
                 sb.append("export VK_ICD_FILENAMES=/dev/null\n")
             }
             else -> {
                 val customVkPath = AppPrefs.getCustomDriverFilePath(prefs, vulkan)
-                val vkLower = vulkan.lowercase()
-                val isMaliOrCompat = vkLower.contains("mali") || vkLower.contains("compat") || vkLower.contains("panvk") || vkLower.contains("panfrost") || vkLower.contains("leegao") || vkLower.contains("vkd3d")
                 if (!customVkPath.isNullOrBlank()) {
-                    sb.append("export VK_ICD_FILENAMES=\"$customVkPath\"\n")
-                    sb.append("export VK_DRIVER_FILES=\"$customVkPath\"\n")
-                    if (customVkPath.endsWith(".so", ignoreCase = true)) {
-                        sb.append("export LD_PRELOAD=\"$customVkPath:\$LD_PRELOAD\"\n")
-                        if (isMaliOrCompat) {
-                            sb.append("export VKD3D_COMPAT_LAYER=\"$customVkPath\"\n")
-                        }
+                    sb.append("export VK_ICD_FILENAMES=$customVkPath\n")
+                    sb.append("export VK_DRIVER_FILES=$customVkPath\n")
+                    if (customVkPath.endsWith(".so")) {
+                        sb.append("export LD_PRELOAD=$customVkPath:\$LD_PRELOAD\n")
                     }
                     sb.append("export VKD3D_FEATURE_LEVEL=12_0\n")
-                    if (isMaliOrCompat || isMtkOrMali) {
-                        sb.append("export MALI_COMPAT=1\n")
-                        sb.append("export VKD3D_CONFIG=single_queue\n")
-                        sb.append("export MESA_VK_WSI_PRESENT_MODE=fifo\n")
-                    } else {
-                        sb.append("export TU_DEBUG=noconform\n")
-                    }
-                } else if (isMaliOrCompat) {
-                    sb.append("export VKD3D_FEATURE_LEVEL=12_0\n")
-                    sb.append("export VKD3D_CONFIG=single_queue\n")
-                    sb.append("export MESA_VK_WSI_PRESENT_MODE=fifo\n")
-                    sb.append("export MALI_COMPAT=1\n")
-                    sb.append("export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/panfrost_icd.aarch64.json\n")
-                    sb.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/panfrost_icd.aarch64.json\n")
+                    sb.append("export TU_DEBUG=noconform\n")
                 } else {
-                    sb.append("export VK_ICD_FILENAMES=\"/usr/share/vulkan/icd.d/${vkLower}_icd.aarch64.json\"\n")
-                    sb.append("export VK_DRIVER_FILES=\"/usr/share/vulkan/icd.d/${vkLower}_icd.aarch64.json\"\n")
+                    val vkLower = vulkan.lowercase()
+                    sb.append("export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/${vkLower}_icd.aarch64.json\n")
+                    sb.append("export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/${vkLower}_icd.aarch64.json\n")
                 }
             }
         }
@@ -554,21 +448,9 @@ val payload = buildString {
             val etcDir = File(containerDir, "etc")
             etcDir.mkdirs()
 
-            // 1. Write /etc/environment with clean key-value pairs
+            // 1. Write /etc/environment
             val envFile = File(etcDir, "environment")
-            val cleanEnvLines = envContent.lines()
-                .filter { it.trim().startsWith("export ") }
-                .map { line ->
-                    val raw = line.trim().removePrefix("export ").trim()
-                    if (raw.contains("=")) {
-                        val parts = raw.split("=", limit = 2)
-                        val k = parts[0].trim()
-                        val v = parts[1].trim().removeSurrounding("\"").removeSurrounding("'")
-                        "$k=\"$v\""
-                    } else ""
-                }
-                .filter { it.isNotBlank() }
-            envFile.writeText(cleanEnvLines.joinToString("\n") + "\n")
+            envFile.writeText(envContent)
 
             // 2. Write /etc/profile.d/xodos_graphics.sh
             val profileDir = File(etcDir, "profile.d")
@@ -579,14 +461,11 @@ val payload = buildString {
 
             val sourceLine = "[ -f /etc/profile.d/xodos_graphics.sh ] && . /etc/profile.d/xodos_graphics.sh"
 
-            // 3. Ensure /etc/bash.bashrc sources /etc/profile.d/xodos_graphics.sh instead of /etc/environment
+            // 3. Ensure /etc/bash.bashrc sources /etc/profile.d/xodos_graphics.sh
             val bashrcFile = File(etcDir, "bash.bashrc")
             if (bashrcFile.exists()) {
-                var existing = bashrcFile.readText()
-                if (existing.contains("source /etc/environment")) {
-                    existing = existing.replace("source /etc/environment", sourceLine)
-                    bashrcFile.writeText(existing)
-                } else if (!existing.contains("xodos_graphics.sh")) {
+                val existing = bashrcFile.readText()
+                if (!existing.contains("xodos_graphics.sh")) {
                     bashrcFile.appendText("\n" + sourceLine + "\n")
                 }
             } else {
@@ -598,11 +477,8 @@ val payload = buildString {
             if (rootDir.isDirectory) {
                 val rootBashrc = File(rootDir, ".bashrc")
                 if (rootBashrc.exists()) {
-                    var existing = rootBashrc.readText()
-                    if (existing.contains("source /etc/environment")) {
-                        existing = existing.replace("source /etc/environment", sourceLine)
-                        rootBashrc.writeText(existing)
-                    } else if (!existing.contains("xodos_graphics.sh")) {
+                    val existing = rootBashrc.readText()
+                    if (!existing.contains("xodos_graphics.sh")) {
                         rootBashrc.appendText("\n" + sourceLine + "\n")
                     }
                 } else {

@@ -1,7 +1,5 @@
 package app.xodos2.ui
 
-import app.xodos2.ui.drawer.menu.CustomDriversDialog
-
 import app.xodos2.ui.glass.GlassButton
 import android.Manifest
 import android.content.ActivityNotFoundException
@@ -49,7 +47,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import app.xodos2.ui.glass.glassBlurModifier
-import app.xodos2.ui.glass.glassDialogStyle
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -93,10 +90,12 @@ import java.net.URL
 import java.net.HttpURLConnection
 import java.io.BufferedReader
 import java.io.InputStreamReader
-
+import app.xodos2.ui.drawer.menu.CustomDriversDialog
 import android.view.WindowManager
 
-private val VULKAN_MODES = listOf("LLVMPIPE", "VENUS", "TURNIP", "PANVK", "MALI_COMPAT")
+import app.xodos2.ui.glassDialogStyle
+
+private val VULKAN_MODES = listOf("LLVMPIPE", "VENUS", "TURNIP")
 private val OPENGL_MODES = listOf("LLVMPIPE", "VIRGL", "ZINK", "GL4ES")
 
 private const val X11_MODE_LABEL_NATIVE = "Native"
@@ -112,9 +111,10 @@ private fun x11ResolutionModeLabelForInternal(mode: String): String = when (mode
     else -> X11_MODE_LABEL_NATIVE
 }
 
-    /**
+ /**
  * Writes /.x11 or /.wayland into every installed container's rootfs.
- * The unused marker is deleted so that only the active launcher marker exists.
+ * The opposite marker is removed *before* the new one is ensured,
+ * so the two markers can never exist simultaneously.
  */
 fun updateLauncherMarkers(context: Context, launcherDefault: String) {
     val filesDir = context.filesDir
@@ -130,7 +130,10 @@ fun updateLauncherMarkers(context: Context, launcherDefault: String) {
         val rootfs = File(filesDir, "containers/$id/")   
         if (!rootfs.exists()) continue
 
-        // Create the marker for the chosen launcher
+        // 1. Delete the opposite marker first to avoid any overlap
+        File(rootfs, otherMarker).delete()
+
+        // 2. Now ensure the chosen marker exists
         File(rootfs, markerName).apply {
             if (!exists()) {
                 createNewFile()
@@ -138,12 +141,8 @@ fun updateLauncherMarkers(context: Context, launcherDefault: String) {
                 writeText(System.currentTimeMillis().toString())
             }
         }
-
-        // Remove the opposite marker
-        File(rootfs, otherMarker).delete()
     }
 }
-
 private fun x11ResolutionModeInternalForLabel(label: String): String = when (label) {
     X11_MODE_LABEL_NATIVE -> "native"
     X11_MODE_LABEL_SCALED -> "scaled"
@@ -419,15 +418,14 @@ var wineWaylandScriptEditorOpen by remember { mutableStateOf(false) }
     var pendingAutoShowWayland by remember { mutableStateOf(false) }
     var desktopVulkanMode by remember { mutableStateOf("LLVMPIPE") }
     var desktopOpenGLMode by remember { mutableStateOf("LLVMPIPE") }
-    var customVulkanDrivers by remember { mutableStateOf(AppPrefs.getCustomVulkanDrivers(prefs)) }
-    var customOpenGLDrivers by remember { mutableStateOf(AppPrefs.getCustomOpenGLDrivers(prefs)) }
-    var customDriversList by remember { mutableStateOf(AppPrefs.getCustomDrivers(prefs)) }
-    var showCustomDriversDialog by remember { mutableStateOf(false) }
     var desktopHiddenInjectedKey by remember { mutableStateOf("") }
     var rendererSessionResetEpoch by remember { mutableIntStateOf(0) }
     var desktopLaunchBlackout by remember(startInTerminal) { mutableStateOf(!startInTerminal) }
     var terminalFontKey by remember { mutableStateOf(ShellFonts.DEFAULT_ID) }
-
+    var customVulkanDrivers by remember { mutableStateOf(AppPrefs.getCustomVulkanDrivers(prefs)) }
+    var customOpenGLDrivers by remember { mutableStateOf(AppPrefs.getCustomOpenGLDrivers(prefs)) }
+    var customDriversList by remember { mutableStateOf(AppPrefs.getCustomDrivers(prefs)) }
+    var showCustomDriversDialog by remember { mutableStateOf(false) }
     var x11MouseMode by remember { mutableStateOf(EmbeddedX11Controller.MouseMode.TOUCHPAD) }
     var x11ResolutionModeLabel by remember { mutableStateOf(X11_MODE_LABEL_NATIVE) }
     var x11DisplayScale by remember { mutableStateOf(100) }
@@ -1378,7 +1376,7 @@ fun checkAndPromptTurnipDrivers() {
     
     
 fun setDesktopVulkanMode(mode: String) {
-    val allowedVk = (AppPrefs.BUILTIN_VULKAN_MODES + customVulkanDrivers).distinct()
+val allowedVk = (AppPrefs.BUILTIN_VULKAN_MODES + customVulkanDrivers).distinct()
     val allowedGl = (AppPrefs.BUILTIN_OPENGL_MODES + customOpenGLDrivers).distinct()
     val prev = GraphicsModeController.Modes(desktopVulkanMode, desktopOpenGLMode)
     var next = GraphicsModeController.sanitize(
@@ -1410,7 +1408,7 @@ fun setDesktopVulkanMode(mode: String) {
 }
 
     fun setDesktopOpenGLMode(mode: String) {
-        val allowedVk = (AppPrefs.BUILTIN_VULKAN_MODES + customVulkanDrivers).distinct()
+    val allowedVk = (AppPrefs.BUILTIN_VULKAN_MODES + customVulkanDrivers).distinct()
         val allowedGl = (AppPrefs.BUILTIN_OPENGL_MODES + customOpenGLDrivers).distinct()
         val prev = GraphicsModeController.Modes(desktopVulkanMode, desktopOpenGLMode)
         val next = GraphicsModeController.sanitize(
@@ -2517,44 +2515,32 @@ if (showDistroSelection) {
                              showNativeContainerPrompt != null || 
                              showSlotPicker || 
                              showTurnipDriverDialog || 
-                             showExitDialog ||
                              showCustomDriversDialog ||
+                             showExitDialog ||
                              bootstrapDownloadInProgress
 
-    val currentVulkanOptions = remember(customVulkanDrivers) {
+
+val currentVulkanOptions = remember(customVulkanDrivers) {
         (AppPrefs.BUILTIN_VULKAN_MODES + customVulkanDrivers).distinct()
     }
     val currentOpenGLOptions = remember(customOpenGLDrivers, desktopVulkanMode) {
         val base = when (desktopVulkanMode) {
-            "TURNIP", "PANVK", "MALI_COMPAT" -> listOf("LLVMPIPE", "VIRGL", "GL4ES")
-            "VENUS"  -> listOf("LLVMPIPE", "VIRGL", "GL4ES")
+            "TURNIP" -> listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
+            "VENUS"  -> listOf("LLVMPIPE", "ZINK", "VIRGL", "GL4ES")
             else     -> AppPrefs.BUILTIN_OPENGL_MODES
         }
         (base + customOpenGLDrivers).distinct()
     }
     val onAddCustomDriver: (AppPrefs.CustomDriverInfo) -> Unit = { driver ->
-        if (driver.type.equals("Both", ignoreCase = true)) {
-            AppPrefs.addCustomDriver(prefs, driver.copy(type = "Vulkan"))
-            AppPrefs.addCustomDriver(prefs, driver.copy(type = "OpenGL"))
-            customDriversList = AppPrefs.getCustomDrivers(prefs)
-            customVulkanDrivers = AppPrefs.getCustomVulkanDrivers(prefs)
-            customOpenGLDrivers = AppPrefs.getCustomOpenGLDrivers(prefs)
-            setDesktopVulkanMode(driver.name)
-            setDesktopOpenGLMode(driver.name)
-        } else if (driver.type.equals("Vulkan", ignoreCase = true)) {
-            AppPrefs.addCustomDriver(prefs, driver)
-            customDriversList = AppPrefs.getCustomDrivers(prefs)
-            customVulkanDrivers = AppPrefs.getCustomVulkanDrivers(prefs)
-            customOpenGLDrivers = AppPrefs.getCustomOpenGLDrivers(prefs)
+        AppPrefs.addCustomDriver(prefs, driver)
+        customDriversList = AppPrefs.getCustomDrivers(prefs)
+        customVulkanDrivers = AppPrefs.getCustomVulkanDrivers(prefs)
+        customOpenGLDrivers = AppPrefs.getCustomOpenGLDrivers(prefs)
+        if (driver.type.equals("Vulkan", ignoreCase = true)) {
             setDesktopVulkanMode(driver.name)
         } else {
-            AppPrefs.addCustomDriver(prefs, driver)
-            customDriversList = AppPrefs.getCustomDrivers(prefs)
-            customVulkanDrivers = AppPrefs.getCustomVulkanDrivers(prefs)
-            customOpenGLDrivers = AppPrefs.getCustomOpenGLDrivers(prefs)
             setDesktopOpenGLMode(driver.name)
         }
-        DisplayOrchestrator.updateContainersSystemEnvironment(context, prefs)
     }
     val onDeleteCustomDriver: (String) -> Unit = { driverName ->
         AppPrefs.removeCustomDriver(prefs, driverName)
@@ -2841,7 +2827,8 @@ ShellScreen(
                 )
             }
         }
-        if (showCustomDriversDialog) {
+        
+         if (showCustomDriversDialog) {
             CustomDriversDialog(
                 customDrivers = customDriversList,
                 onAddCustomDriver = onAddCustomDriver,
@@ -2849,7 +2836,6 @@ ShellScreen(
                 onDismiss = { showCustomDriversDialog = false }
             )
         }
-
         FloatingMenuOrb(
             prefs = prefs,
             onClick = {

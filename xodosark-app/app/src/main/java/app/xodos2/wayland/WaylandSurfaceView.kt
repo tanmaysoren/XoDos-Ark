@@ -49,6 +49,7 @@ fun WaylandSurfaceView(
             val surfaceView = SurfaceView(ctx).apply {
                 holder.addCallback(object : SurfaceHolder.Callback {
                     override fun surfaceCreated(h: SurfaceHolder) {
+                        android.util.Log.d("WaylandSurfaceView", "surfaceCreated: EGL Surface bound successfully")
                         val surface = h.surface ?: return
                         val l = (this@apply.parent as? WaylandTouchLayout)
                         val r = l?.resolutionPercent?.coerceIn(10, 100) ?: 100
@@ -120,4 +121,3 @@ fun WaylandSurfaceView(
         modifier = modifier
     )
 }
-

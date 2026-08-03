@@ -17,10 +17,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import app.xodos2.ui.glass.glassDialogStyle
+import app.xodos2.ui.glassDialogStyle
 import app.xodos2.ui.prefs.AppPrefs
 import app.xodos2.ui.glass.GlassButton
 import org.json.JSONObject
+//import app.xodos2.ui.glass.glassDialogStyle
 
 //private data class SavedCommand(val title: String, val command: String)
 

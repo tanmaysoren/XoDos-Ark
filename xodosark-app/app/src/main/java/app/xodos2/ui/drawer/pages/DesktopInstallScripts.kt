@@ -38,7 +38,7 @@ object DesktopInstallScripts {
                 Pair(
                     "apk update \n" +
                     "apk add ",
-                    "mesa-utils xwayland vulkan-loader mesa-dri-gallium vulkan-tools dbus"
+                    "mesa-utils xwayland mesa-egl mesa-gles vulkan-loader mesa-dri-gallium vulkan-tools dbus"
                 )
             cleanDistro.contains("void") ->
                 Pair(
@@ -159,24 +159,27 @@ echo "Kali base environment aligned."
             }
             "LXQt Desktop" -> when {
                 cleanDistro.contains("arch") || cleanDistro.contains("manjaro") -> "lxqt lxqt-themes featherpad"
+                cleanDistro.contains("alpine") -> "lxqt-desktop openbox obconf-qt lxqt-qtplugin papirus-icon-theme"
                 cleanDistro.contains("debian") || cleanDistro.contains("ubuntu") -> "lxqt openbox"
                 cleanDistro.contains("fedora") -> "@lxqt-desktop-environment qt5-qtbase-gui qt6-qtbase-gui"
                 else -> "lxqt"
             }
             "KDE Plasma" -> when {
                 cleanDistro.contains("arch") || cleanDistro.contains("manjaro") -> "plasma-meta dolphin konsole plasma-x11-session kwin-x11"
-                cleanDistro.contains("debian") || cleanDistro.contains("ubuntu") -> "kde-plasma-desktop"
+                cleanDistro.contains("debian") || cleanDistro.contains("ubuntu") || cleanDistro.contains("kali") -> "kde-plasma-desktop"
                 cleanDistro.contains("fedora") -> "@kde-desktop"
                 else -> "plasma-desktop"
             }
             "GNOME" -> when {
                 cleanDistro.contains("arch") || cleanDistro.contains("manjaro") -> "gnome gnome-tweaks"
-                cleanDistro.contains("debian") || cleanDistro.contains("ubuntu") -> "gnome-core"
+                cleanDistro.contains("debian") || cleanDistro.contains("ubuntu") || cleanDistro.contains("kali") -> "gnome-core"
                 cleanDistro.contains("fedora") -> "@gnome-desktop"
                 else -> "gnome"
             }
             "MATE" -> when {
                 cleanDistro.contains("arch") || cleanDistro.contains("manjaro") -> "mate mate-extra"
+                cleanDistro.contains("debian") || cleanDistro.contains("ubuntu") || cleanDistro.contains("kali") -> "mate-desktop-environment pcmanfm nitrogen"
+                cleanDistro.contains("fedora") -> "@mate-desktop-environment qt5-qtbase-gui qt6-qtbase-gui"
                 else -> "mate-desktop-environment"
             }
             "Cinnamon" -> when {
@@ -193,11 +196,12 @@ echo "Kali base environment aligned."
                 echo "Downgrading kwin to fix PRoot Wayland crashing bug..."
                 curl -L -o ~/kwin-6.6.5-4-aarch64.pkg.tar.xz https://github.com/xodiosx/XoDos-Ark/releases/download/4.18.1-1fix/kwin-6.6.5-4-aarch64.pkg.tar.xz
                 pacman -U --noconfirm ~/kwin-6.6.5-4-aarch64.pkg.tar.xz
+                # tags:/ path fix 
                 balooctl6 status
                 balooctl6 purge
                 balooctl6 suspend
                 balooctl6 disable
-                echo "kwin successfully downgraded."
+                echo "fixed in successfully."
             """.trimIndent() + "\n"
         } else ""
 
@@ -214,7 +218,7 @@ echo "Kali base environment aligned."
             (cleanDistro.contains("debian") || cleanDistro.contains("ubuntu") ||
              cleanDistro.contains("kali") || cleanDistro.contains("trisquel"))) {
             scriptBody += """
-                # Apply GNOME
+                # Apply GNOME 
                rm -f /usr/share/dbus-1/system-services/org.freedesktop.login1.service
                 echo 'fixed try using those commands to start desktop'
                 rm -f /usr/share/dbus-1/system-services/org.freedesktop.login1.service
@@ -229,6 +233,20 @@ export XDG_SESSION_DESKTOP=gnome
 
             """.trimIndent() + "\n"
         }
+        
+         if (envName == "MATE" &&
+            (cleanDistro.contains("debian") || cleanDistro.contains("ubuntu") ||
+             cleanDistro.contains("kali") || cleanDistro.contains("trisquel"))) {
+            scriptBody += """
+                # Apply MATE  fix by @HARSH_VIBEDEV
+                
+               mkdir -p ~/Desktop 
+               chmod 755 ~/Desktop 
+               mv /usr/bin/caja /usr/bin/caja-disabled
+
+            """.trimIndent() + "\n"
+        }
+        
         if (envName == "LXQt Desktop" &&
             (cleanDistro.contains("debian") || cleanDistro.contains("ubuntu") ||
              cleanDistro.contains("kali") || cleanDistro.contains("trisquel"))) {
