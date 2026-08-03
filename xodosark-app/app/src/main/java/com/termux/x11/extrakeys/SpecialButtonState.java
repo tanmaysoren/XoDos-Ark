@@ -1,5 +1,5 @@
 package com.termux.x11.extrakeys;
-import app.xodos2.R;
+
 import android.widget.Button;
 
 import java.util.ArrayList;

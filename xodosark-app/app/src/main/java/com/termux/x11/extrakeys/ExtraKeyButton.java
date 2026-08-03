@@ -1,7 +1,7 @@
 package com.termux.x11.extrakeys;
 
 import android.text.TextUtils;
-import app.xodos2.R;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 

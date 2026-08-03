@@ -1,5 +1,5 @@
 package com.termux.x11.extrakeys;
-import app.xodos2.R;
+
 import androidx.annotation.NonNull;
 
 import java.util.HashMap;

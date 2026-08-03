@@ -1,7 +1,7 @@
 package com.termux.x11.extrakeys;
 
 import android.view.View;
-import app.xodos2.R;
+
 import androidx.annotation.NonNull;
 
 import com.termux.x11.extrakeys.ExtraKeysConstants.EXTRA_KEY_DISPLAY_MAPS;

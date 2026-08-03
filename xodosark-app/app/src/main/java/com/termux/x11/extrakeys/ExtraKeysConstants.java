@@ -1,7 +1,7 @@
 package com.termux.x11.extrakeys;
 
 import android.view.KeyEvent;
-import app.xodos2.R;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
