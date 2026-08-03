@@ -415,4 +415,54 @@ public class MainActivity extends LoriePreferences {
             }
         }; // terminate anonymous TermuxActivityListener assignment
     }   // close setupTermuxActivityListener()
+
+    // --- BEGIN COMPATIBILITY LAYER ---
+    // Provide the legacy API surface expected by other classes so the project compiles.
+
+    private static MainActivity sInstance = null;
+    private LorieView mLorieView = null;
+    private static boolean sCapturingEnabled = true;
+
+    /** Legacy accessor used across the codebase */
+    public static MainActivity getInstance() { return sInstance; }
+
+    /** Legacy prefs accessor */
+    public static Prefs getPrefs() { return prefs; }
+
+    /** Legacy LorieView accessor (may be null until view is created) */
+    public LorieView getLorieView() { return mLorieView; }
+
+    /** Legacy capturing control used by InputEventSender */
+    public static void setCapturingEnabled(boolean enabled) { sCapturingEnabled = enabled; }
+    public static boolean isCapturingEnabled() { return sCapturingEnabled; }
+
+    /** Legacy toggle keyboard method (many call sites expect this signature) */
+    public static void toggleKeyboardVisibility(MainActivity activity) {
+        if (activity == null) return;
+        try {
+            InputMethodManager imm = (InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm == null) return;
+            View v = activity.getCurrentFocus();
+            if (v == null) v = activity.getWindow().getDecorView();
+
+            // Best-effort toggle: hide if active otherwise show
+            if (imm.isAcceptingText()) {
+                imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+            } else {
+                imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
+            }
+        } catch (Throwable t) {
+            Log.w("MainActivity", "toggleKeyboardVisibility failed", t);
+        }
+    }
+
+    /* No-op stubs for instance methods expected by other components. Implement real behaviour as needed. */
+    public void toggleMouseAuxButtons() { /* no-op compatibility for now */ }
+    public void toggleStylusAuxButtons() { /* no-op compatibility for now */ }
+    public void clientConnectedStateChanged() { /* no-op compatibility for now */ }
+    public void tryConnect() { /* no-op compatibility for now */ }
+
+    /** Legacy handler used by LorieView: keep signature and return type to satisfy callers. */
+    public boolean handleKey(KeyEvent event) { return false; }
+    // --- END COMPATIBILITY LAYER ---
 }   // close MainActivity class
