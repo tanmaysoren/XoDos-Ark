@@ -123,7 +123,7 @@ class SpeechInputManager(private val context: Context) {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start speech recognizer", e)
             _isListening.value = false
-            callback?.onError(e.message ?: "Failed to start listening")
+            callback?.onError(e.message ?: "Failed to start speech input")
         }
     }
 

@@ -52,9 +52,11 @@ object VoipMicBridge {
 
     /**
      * Script to run inside proot terminal to attach the VoIP mic to PulseAudio.
+     * Checks if android_mic is already present, attempts native OpenSL ES module-sles-source,
+     * and falls back to named-pipe TCP bridge on port 4714.
      */
     fun getProotSetupCommand(port: Int = DEFAULT_TCP_PORT): String {
-        return "pactl load-module module-simple-protocol-tcp-source source_name=android_mic record=false server=127.0.0.1:$port rate=$SAMPLE_RATE format=s16le channels=1 && pactl set-default-source android_mic && echo '✅ Android VoIP mic attached to PulseAudio as default source'"
+        return "pactl list sources short | grep -q android_mic || (pactl load-module module-sles-source source_name=android_mic 2>/dev/null || (mkfifo /tmp/micpipe 2>/dev/null; pactl load-module module-pipe-source source_name=android_mic file=/tmp/micpipe format=s16le rate=$SAMPLE_RATE channels=1 2>/dev/null; (nc 127.0.0.1 $port > /tmp/micpipe 2>/dev/null &))); pactl set-default-source android_mic 2>/dev/null && echo '✅ Android microphone attached to PulseAudio as default source'"
     }
 
     /**
