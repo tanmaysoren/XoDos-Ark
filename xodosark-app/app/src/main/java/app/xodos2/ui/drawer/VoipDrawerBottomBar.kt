@@ -17,7 +17,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.MicOff
 import androidx.compose.material.icons.rounded.Send
@@ -36,7 +35,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import app.xodos2.R
 import app.xodos2.voip.SpeechInputManager
 import app.xodos2.voip.VoipMicBridge
 
@@ -67,7 +65,6 @@ fun VoipDrawerBottomBar(
     // VoIP Bridge states
     val isStreaming by VoipMicBridge.isStreaming.collectAsState()
     val connectedClients by VoipMicBridge.connectedClientsCount.collectAsState()
-    val bridgeLevel by VoipMicBridge.audioLevel.collectAsState()
     val bridgeStatus by VoipMicBridge.statusMessage.collectAsState()
 
     // Speech-To-Text manager & states
@@ -76,7 +73,6 @@ fun VoipDrawerBottomBar(
     }
     val isListening by speechManager.isListening.collectAsState()
     val lastSpeechResult by speechManager.lastResult.collectAsState()
-    val sttLevel by speechManager.rmsLevel.collectAsState()
 
     DisposableEffect(speechManager) {
         speechManager.setCallback(object : SpeechInputManager.SpeechCallback {
@@ -233,7 +229,7 @@ fun VoipDrawerBottomBar(
                                 .padding(horizontal = 5.dp, vertical = 1.dp)
                         ) {
                             Text(
-                                text = if (isActive) "LIVE" else "OFF",
+                                text = if (isActive) "ACTIVE" else "MUTED",
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontSize = 9.sp,
                                     fontWeight = FontWeight.Black,
@@ -245,13 +241,13 @@ fun VoipDrawerBottomBar(
 
                     val statusSubtext = when {
                         selectedMode == VoipMode.VOIP_MIC_STREAM && isStreaming ->
-                            "TCP 127.0.0.1:4714 • ${if (connectedClients > 0) "$connectedClients connected" else "Listening..."}"
+                            "TCP 127.0.0.1:4714 • ${if (connectedClients > 0) "$connectedClients client(s) connected" else "Ready for connection"}"
                         selectedMode == VoipMode.VOICE_TO_TERMINAL && isListening ->
-                            "Listening to voice command..."
+                            "Dictating voice command..."
                         selectedMode == VoipMode.VOICE_TO_TERMINAL ->
                             "Tap mic to dictate to proot"
                         else ->
-                            "Tap to stream mic into proot distro"
+                            "Tap to enable VoIP microphone"
                     }
 
                     Text(
@@ -274,42 +270,6 @@ fun VoipDrawerBottomBar(
                         color = MaterialTheme.colorScheme.primary,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
-
-            // Real-time audio waveform / meter bar when active
-            AnimatedVisibility(visible = isActive) {
-                val currentLevel = if (selectedMode == VoipMode.VOIP_MIC_STREAM) bridgeLevel else (sttLevel.coerceIn(0f, 10f) / 10f)
-                Column(modifier = Modifier.padding(top = 8.dp)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.GraphicEq,
-                            contentDescription = null,
-                            tint = activeGlowColor,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(Modifier.width(6.dp))
-                        Text(
-                            text = "Audio Input Level",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                color = Color.White.copy(alpha = 0.6f),
-                                fontSize = 10.sp
-                            )
-                        )
-                    }
-                    Spacer(Modifier.height(4.dp))
-                    LinearProgressIndicator(
-                        progress = { currentLevel.coerceIn(0f, 1f) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(4.dp)
-                            .clip(RoundedCornerShape(2.dp)),
-                        color = activeGlowColor,
-                        trackColor = Color.White.copy(alpha = 0.1f)
                     )
                 }
             }
