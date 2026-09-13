@@ -28,6 +28,7 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <meta-data android:name="com.samsung.android.multidisplay.keep_process_alive" android:value="false"/>
     <meta-data android:name="android.allow_multiple_resumed_activities" android:value="true" />
