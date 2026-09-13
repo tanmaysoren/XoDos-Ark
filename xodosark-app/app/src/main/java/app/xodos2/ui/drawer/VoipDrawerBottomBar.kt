@@ -18,6 +18,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.GraphicEq
+import androidx.compose.material.icons.rounded.Mic
+import androidx.compose.material.icons.rounded.MicOff
 import androidx.compose.material.icons.rounded.Send
 import androidx.compose.material.icons.rounded.SettingsVoice
 import androidx.compose.material3.*
@@ -29,7 +31,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -198,9 +199,7 @@ fun VoipDrawerBottomBar(
                         }
                 ) {
                     Icon(
-                        painter = painterResource(
-                            id = if (isActive) R.drawable.ic_mic else R.drawable.ic_mic_off
-                        ),
+                        imageVector = if (isActive) Icons.Rounded.Mic else Icons.Rounded.MicOff,
                         contentDescription = "VoIP Microphone",
                         tint = activeGlowColor,
                         modifier = Modifier.size(24.dp)
