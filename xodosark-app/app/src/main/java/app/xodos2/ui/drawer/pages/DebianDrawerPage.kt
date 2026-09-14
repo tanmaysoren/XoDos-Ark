@@ -1,7 +1,5 @@
 package app.xodos2.ui.drawer.pages
 
-import app.xodos2.ui.drawer.pages.DxvkSelectorSection
-import app.xodos2.ui.drawer.pages.HudSelectorSection
 import android.content.SharedPreferences
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*

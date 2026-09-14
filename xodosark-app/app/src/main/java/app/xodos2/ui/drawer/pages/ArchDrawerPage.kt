@@ -36,6 +36,7 @@ import app.xodos2.ui.runtime.NativeInstallCoordinator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import app.xodos2.ui.glassDialogStyle
 
 
 // ----------------------------------------------------------------
