@@ -1,7 +1,5 @@
 package app.xodos2.ui.drawer.pages
 
-import app.xodos2.ui.drawer.pages.DxvkSelectorSection
-import app.xodos2.ui.drawer.pages.HudSelectorSection
 import android.content.SharedPreferences
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
@@ -38,7 +36,6 @@ import app.xodos2.ui.runtime.NativeInstallCoordinator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.json.JSONObject
-import app.xodos2.ui.glassDialogStyle
 
 
 // ----------------------------------------------------------------
